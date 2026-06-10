@@ -1,0 +1,987 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AduanCepat</title>
+    <meta name="description" content="Platform resmi pengaduan warga AduanCepat. Lapor cepat, tindak tepat.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --green-dark: #1a3c1a;
+            --green-mid: #2d6a2d;
+            --green-light: #4caf50;
+            --green-pale: #f0f4ea;
+            --green-accent: #6abf69;
+            --text-dark: #111827;
+            --text-mid: #374151;
+            --text-muted: #6b7280;
+            --bg: #f7f9f3;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══════════════════════════
+           NAVBAR
+        ═══════════════════════════ */
+        nav {
+            background: var(--white);
+            border-bottom: 1px solid rgba(26,60,26,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .nav-logo-box {
+            width: 36px;
+            height: 36px;
+            background: var(--green-dark);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-logo-box svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .nav-brand-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--green-dark);
+            letter-spacing: -0.3px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .nav-links a {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--green-dark);
+            background: var(--green-pale);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-username {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            padding: 8px 18px;
+            background: var(--green-dark);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: var(--green-mid);
+        }
+
+        /* ═══════════════════════════
+           HERO SECTION
+        ═══════════════════════════ */
+        .hero {
+            background: var(--green-pale);
+            padding: 80px 32px 70px;
+        }
+
+        .hero-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(26, 60, 26, 0.08);
+            border: 1px solid rgba(26, 60, 26, 0.15);
+            border-radius: 9999px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--green-dark);
+            margin-bottom: 24px;
+        }
+
+        .hero-badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green-light);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .hero-title .highlight {
+            color: var(--green-dark);
+        }
+
+        .hero-desc {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 36px;
+            max-width: 440px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero-primary {
+            padding: 14px 28px;
+            background: var(--green-dark);
+            color: white;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(26,60,26,0.2);
+        }
+
+        .btn-hero-primary:hover {
+            background: var(--green-mid);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(26,60,26,0.3);
+        }
+
+        .btn-hero-secondary {
+            padding: 14px 28px;
+            background: transparent;
+            color: var(--green-dark);
+            border: 1.5px solid rgba(26,60,26,0.3);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-hero-secondary:hover {
+            border-color: var(--green-dark);
+            background: rgba(26,60,26,0.04);
+        }
+
+        /* Hero Right: Image Card */
+        .hero-image-wrap {
+            position: relative;
+        }
+
+        .hero-img-card {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            position: relative;
+        }
+
+        .hero-img-card img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero-stat-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--green-dark);
+        }
+
+        .stat-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--green-mid);
+        }
+
+        .stat-check svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ═══════════════════════════
+           HOW IT WORKS
+        ═══════════════════════════ */
+        .how-section {
+            padding: 90px 32px;
+            background: var(--white);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 560px;
+            margin: 0 auto 56px;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .steps-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .steps-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 560px) {
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+
+        .step-card {
+            background: var(--bg);
+            border: 1px solid rgba(26,60,26,0.07);
+            border-radius: 16px;
+            padding: 28px 24px;
+            transition: all 0.25s;
+        }
+
+        .step-card:hover {
+            border-color: rgba(26,60,26,0.2);
+            box-shadow: 0 4px 20px rgba(26,60,26,0.06);
+            transform: translateY(-2px);
+        }
+
+        .step-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(26,60,26,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            color: var(--green-dark);
+        }
+
+        .step-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .step-num {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--green-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .step-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .step-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        /* ═══════════════════════════
+           LATEST REPORTS
+        ═══════════════════════════ */
+        .reports-section {
+            padding: 80px 32px;
+            background: var(--bg);
+        }
+
+        .reports-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .reports-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 36px;
+        }
+
+        .reports-header h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+        }
+
+        .reports-header p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .btn-see-all {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--green-dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-see-all:hover {
+            text-decoration: underline;
+        }
+
+        .btn-see-all svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .reports-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Big Featured Card */
+        .report-featured {
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--white);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(26,60,26,0.06);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .report-featured:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        .report-featured img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .report-featured-body {
+            padding: 24px;
+        }
+
+        .report-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.73rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 12px;
+        }
+
+        .tag-diproses {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .tag-selesai {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .tag-pending {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .report-featured-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.35;
+            margin-bottom: 8px;
+        }
+
+        .report-featured-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .report-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .report-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .report-meta svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Small Report Cards */
+        .reports-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .report-small {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid rgba(26,60,26,0.06);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .report-small:hover {
+            border-color: rgba(26,60,26,0.2);
+            transform: translateX(2px);
+        }
+
+        .report-small-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+
+        .report-small-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        .report-small-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+        }
+
+        .report-location {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .report-location svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* ═══════════════════════════
+           CTA SECTION
+        ═══════════════════════════ */
+        .cta-section {
+            padding: 80px 32px;
+            background: var(--white);
+        }
+
+        .cta-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cta-card {
+            background: var(--green-dark);
+            border-radius: 24px;
+            padding: 64px 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+        }
+
+        .cta-card::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -80px;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+        }
+
+        .cta-card h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+            margin-bottom: 14px;
+        }
+
+        .cta-card p {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.75);
+            line-height: 1.65;
+            max-width: 520px;
+            margin: 0 auto 36px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-cta-white {
+            padding: 14px 28px;
+            background: white;
+            color: var(--green-dark);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-cta-white:hover {
+            background: #f0f4ea;
+        }
+
+        .btn-cta-outline {
+            padding: 14px 28px;
+            background: transparent;
+            color: white;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-cta-outline:hover {
+            border-color: white;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ═══════════════════════════
+           FOOTER
+        ═══════════════════════════ */
+        footer {
+            background: var(--white);
+            border-top: 1px solid rgba(26,60,26,0.06);
+            padding: 28px 32px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--green-dark);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hero-title { font-size: 2.2rem; }
+            .cta-card h2 { font-size: 1.6rem; }
+            .reports-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ NAVBAR ═══ -->
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo-box">
+                    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                </div>
+                <span class="nav-brand-name">AduanCepat</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="active">Beranda</a>
+                <a href="#">Laporan Saya</a>
+                <a href="#">Laporan Publik</a>
+                <a href="#">Panduan</a>
+            </div>
+            <div class="nav-right">
+                <span class="nav-username">{{ user.first_name|default:user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn-logout">Keluar</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ HERO SECTION ═══ -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-left">
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Platform Terpercaya Masyarakat
+                </div>
+                <h1 class="hero-title">
+                    Lapor Cepat,<br><span class="highlight">Tindak Tepat.</span>
+                </h1>
+                <p class="hero-desc">Sampaikan aspirasi dan keluhan Anda langsung kepada otoritas terkait. Membangun lingkungan yang lebih baik, melalui transparansi dan respons cepat.</p>
+                <div class="hero-actions">
+                    <a href="#" class="btn-hero-primary" onclick="alert('Fitur segera hadir!')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        Mulai Melapor
+                    </a>
+                    <a href="#" class="btn-hero-secondary">
+                        Lihat Laporan Publik
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image-wrap">
+                <div class="hero-img-card">
+                    <img src="{% static 'images/road_repair.png' %}" alt="Perbaikan jalan oleh Dinas PU">
+                    <div class="hero-stat-bar">
+                        <div class="stat-item">
+                            <div class="stat-check">
+                                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                Tingkat Penyelesaian
+                            </div>
+                            <span class="stat-value">94.2%</span>
+                        </div>
+                        <div class="stat-item" style="text-align:right;">
+                            <span class="stat-label">Rata-rata Respons</span>
+                            <span class="stat-value">Harian</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ HOW IT WORKS ═══ -->
+    <section class="how-section">
+        <div class="section-header">
+            <h2 class="section-title">Cara Kerja AduanCepat</h2>
+            <p class="section-subtitle">Alur pelaporan yang transparan memastikan setiap aduan Anda ditangani dengan serius dan mudah terpantau.</p>
+        </div>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-icon">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                </div>
+                <div class="step-num">1. Tulis Laporan</div>
+                <div class="step-title">Laporkan Masalah Anda</div>
+                <p class="step-desc">Laporkan keluhan atau aspirasi beserta foto dan alamat yang jelas sebagai bukti pendukung.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-icon">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"/>
+                    </svg>
+                </div>
+                <div class="step-num">2. Verifikasi</div>
+                <div class="step-title">Tim Admin Verifikasi</div>
+                <p class="step-desc">Tim admin akan memverifikasi laporan Anda untuk memastikan kelengkapan dan kevalidan data.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-icon">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+                    </svg>
+                </div>
+                <div class="step-num">3. Tindak Lanjut</div>
+                <div class="step-title">Diteruskan ke Instansi</div>
+                <p class="step-desc">Laporan diteruskan ke instansi terkait untuk segera ditindaklanjuti secara nyata.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-icon">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/>
+                    </svg>
+                </div>
+                <div class="step-num">4. Selesai</div>
+                <div class="step-title">Laporan Terselesaikan</div>
+                <p class="step-desc">Anda akan mendapatkan notifikasi setelah laporan Anda berhasil diselesaikan oleh instansi terkait.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ LATEST REPORTS ═══ -->
+    <section class="reports-section">
+        <div class="reports-inner">
+            <div class="reports-header">
+                <div>
+                    <h2>Laporan Terbaru</h2>
+                    <p>Pantau perkembangan isu di sekitar Anda secara real-time.</p>
+                </div>
+                <a href="#" class="btn-see-all">
+                    Lihat Semua Laporan
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+                </a>
+            </div>
+            <div class="reports-grid">
+                <!-- Featured Report -->
+                <div class="report-featured">
+                    <img src="{% static 'images/road_repair.png' %}" alt="Perbaikan jalan berlubang">
+                    <div class="report-featured-body">
+                        <span class="report-tag tag-diproses">🔄 Diproses</span>
+                        <h3 class="report-featured-title">Perbaikan Jalan Berlubang – Jl. Sudirman</h3>
+                        <p class="report-featured-desc">Warga mempermasalahkan kondisi jalan yang sudah parah berlubang dan saat ini sedang dalam tahap pengerjaan oleh Dinas PU.</p>
+                        <div class="report-meta">
+                            <span>
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                Jakarta Pusat
+                            </span>
+                            <span>
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                2 hari yang lalu
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Sidebar Reports -->
+                <div class="reports-sidebar">
+                    <div class="report-small">
+                        <div class="report-tag tag-selesai">✅ Selesai</div>
+                        <h4 class="report-small-title">Penerangan Jalan Mati di Perempatan Kota</h4>
+                        <p class="report-small-desc">Lampu jalan di perempatan kota sudah diperbaiki dan berfungsi kembali.</p>
+                        <div class="report-small-footer">
+                            <span class="report-location">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                Surabaya · Kemarin
+                            </span>
+                        </div>
+                    </div>
+                    <div class="report-small">
+                        <div class="report-tag tag-pending">🕐 Pending</div>
+                        <h4 class="report-small-title">Sampah Menumpuk di Lorong Belakang Pasar</h4>
+                        <p class="report-small-desc">Tumpukan sampah semakin banyak di lorong kosong yang ada di belakang pasar malam.</p>
+                        <div class="report-small-footer">
+                            <span class="report-location">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                Surabaya · 3 hari lalu
+                            </span>
+                        </div>
+                    </div>
+                    <div class="report-small">
+                        <div class="report-tag tag-diproses">🔄 Diproses</div>
+                        <h4 class="report-small-title">Selokan Tersumbat Akibat Sampah Plastik</h4>
+                        <p class="report-small-desc">Aliran air tersumbat dan menyebabkan genangan air di depan permukiman warga.</p>
+                        <div class="report-small-footer">
+                            <span class="report-location">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                Bandung · 4 hari lalu
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ CTA SECTION ═══ -->
+    <section class="cta-section">
+        <div class="cta-inner">
+            <div class="cta-card">
+                <h2>Siap Membuat Perubahan?</h2>
+                <p>Bergabunglah dengan ribuan warga yang telah berkontribusi untuk menciptakan lingkungan yang lebih bersih, aman, dan nyaman.</p>
+                <div class="cta-buttons">
+                    <a href="#" class="btn-cta-white" onclick="alert('Fitur segera hadir!')">Daftar Sekarang</a>
+                    <a href="#" class="btn-cta-outline">Hubungi Kami</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer>
+        <div class="footer-inner">
+            <span>&copy; 2024 AduanCepat Citizen Portal. Seluruh Hak Cipta Dilindungi.</span>
+            <div class="footer-links">
+                <a href="#">Kebijakan Privasi</a>
+                <a href="#">Syarat & Ketentuan</a>
+                <a href="#">Bantuan</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
