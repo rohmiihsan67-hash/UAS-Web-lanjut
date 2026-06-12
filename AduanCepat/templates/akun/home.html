@@ -257,11 +257,31 @@
             position: relative;
         }
 
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-10px); }
+        }
+
         .hero-img-card {
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0,0,0,0.12);
             position: relative;
+            cursor: pointer;
+            animation: floatCard 4s ease-in-out infinite;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hero-img-card:hover {
+            animation-play-state: paused;
+            transform: translateY(-18px) scale(1.02);
+            box-shadow: 0 40px 80px rgba(0,0,0,0.22), 0 0 0 4px rgba(26,60,26,0.12);
+        }
+
+        .hero-img-card:active {
+            transform: translateY(-8px) scale(0.99);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
 
         .hero-img-card img {

@@ -558,11 +558,6 @@
 
     </div><!-- /.card -->
 
-    <!-- Status badge -->
-    <div class="status-badge">
-        <span class="status-dot"></span>
-        System Operational: 99.9% Uptime
-    </div>
 
     <!-- Footer links -->
     <div class="footer-links">
@@ -582,6 +577,17 @@
                 ? 'admin@organization.gov'
                 : 'name@organization.gov';
             document.getElementById('id_username').placeholder = emailPlaceholder;
+
+            // Reset username dan password setiap kali pindah tab
+            document.getElementById('id_username').value = '';
+            const passInput = document.getElementById('id_password');
+            passInput.value = '';
+
+            // Reset eye toggle kembali ke mode password tersembunyi
+            passInput.type = 'password';
+            document.getElementById('eye-icon').innerHTML = `
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>`;
         }
 
         // ── Password toggle ──
