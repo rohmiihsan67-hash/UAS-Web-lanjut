@@ -28,3 +28,33 @@ class CitizenRegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class AdminProfileForm(forms.ModelForm):
+    birth_date = forms.DateField(
+        required=False,
+        label='Tanggal Lahir',
+        widget=forms.DateInput(attrs={'type': 'date'}),
+    )
+    duty_start = forms.TimeField(
+        required=False,
+        label='Jam Masuk',
+        widget=forms.TimeInput(attrs={'type': 'time'}),
+    )
+    duty_end = forms.TimeField(
+        required=False,
+        label='Jam Selesai',
+        widget=forms.TimeInput(attrs={'type': 'time'}),
+    )
+
+    class Meta:
+        from .models import AdminProfile
+        model = AdminProfile
+        fields = [
+            'full_name', 'email', 'phone', 'birth_date', 'birth_place',
+            'age', 'gender', 'department', 'position', 'supervisor',
+            'duty_start', 'duty_end', 'memo_text',
+        ]
+        widgets = {
+            'memo_text': forms.Textarea(attrs={'rows': 3}),
+        }

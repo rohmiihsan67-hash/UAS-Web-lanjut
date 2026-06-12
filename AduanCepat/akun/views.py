@@ -11,6 +11,38 @@ def home_view(request):
     return render(request, 'akun/home.html')
 
 
+@login_required(login_url='/akun/login/')
+def admin_dashboard_view(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Anda tidak memiliki akses ke halaman admin.')
+        return redirect('/')
+
+    from .models import AdminProfile
+    from .forms import AdminProfileForm
+
+    # Get or create profile for this admin
+    profile, created = AdminProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        form = AdminProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profil berhasil disimpan!')
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, 'Mohon periksa kembali data yang diisi.')
+    else:
+        form = AdminProfileForm(instance=profile)
+
+    context = {
+        'profile': profile,
+        'form': form,
+        'is_editing': request.GET.get('edit') == '1' or not profile.is_profile_complete,
+        'actions': [],  # Data tindakan administratif kosong
+    }
+    return render(request, 'akun/admin_dashboard.html', context)
+
+
 def register_view(request):
     if request.method == 'POST':
         form = CitizenRegistrationForm(request.POST)
@@ -26,16 +58,24 @@ def register_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.is_staff:
+            return redirect('admin_dashboard')
         return redirect('/')
     if request.method == 'POST':
+        login_role = request.POST.get('login_role', 'user')
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
             if user is not None:
+                if login_role == 'admin' and not user.is_staff:
+                    messages.error(request, 'Akun ini tidak memiliki hak akses admin.')
+                    return render(request, 'akun/login.html', {'form': form})
                 login(request, user)
-                return redirect('/')  # arahkan ke halaman utama setelah login
+                if login_role == 'admin' and user.is_staff:
+                    return redirect('admin_dashboard')
+                return redirect('/')
         else:
             messages.error(request, 'Username atau password salah.')
     else:
