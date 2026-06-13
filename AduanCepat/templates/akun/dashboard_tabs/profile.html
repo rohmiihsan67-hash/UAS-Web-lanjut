@@ -1,0 +1,284 @@
+{% if is_editing %}
+<!-- Edit Mode Form -->
+<div class="profile-edit-card">
+    <div class="actions-header" style="margin-bottom: 20px;">
+        <h3 style="font-size: 1.2rem; color: var(--green-dark);">Edit Admin Profile</h3>
+        {% if profile.is_profile_complete %}
+        <a href="{% url 'admin_dashboard' %}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Cancel</a>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'admin_dashboard' %}">
+        {% csrf_token %}
+
+        <div class="form-section-title">Data Diri (Personal Info)</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="id_full_name">Nama Lengkap</label>
+                <input type="text" name="full_name" id="id_full_name" class="form-control" value="{{ profile.full_name }}" required placeholder="Nama Lengkap Anda">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_email">Email</label>
+                <input type="email" name="email" id="id_email" class="form-control" value="{{ profile.email }}" required placeholder="email@domain.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_phone">Nomor Telepon</label>
+                <input type="text" name="phone" id="id_phone" class="form-control" value="{{ profile.phone }}" placeholder="Contoh: 08123456789">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_age">Umur</label>
+                <input type="number" name="age" id="id_age" class="form-control" min="0" value="{% if profile.age %}{{ profile.age }}{% endif %}" placeholder="Umur Anda (Tahun)">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_gender">Jenis Kelamin</label>
+                <select name="gender" id="id_gender" class="form-control">
+                    <option value="" {% if not profile.gender %}selected{% endif %}>-</option>
+                    <option value="Laki-laki" {% if profile.gender == 'Laki-laki' %}selected{% endif %}>Laki-laki</option>
+                    <option value="Perempuan" {% if profile.gender == 'Perempuan' %}selected{% endif %}>Perempuan</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_birth_place">Tempat Lahir</label>
+                <input type="text" name="birth_place" id="id_birth_place" class="form-control" value="{{ profile.birth_place }}" placeholder="Tempat Lahir">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_birth_date">Tanggal Lahir</label>
+                <input type="date" name="birth_date" id="id_birth_date" class="form-control" value="{% if profile.birth_date %}{{ profile.birth_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+        </div>
+
+        <div class="form-section-title">Pekerjaan & Jadwal (Employment & Schedule)</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="id_department">Departemen</label>
+                <input type="text" name="department" id="id_department" class="form-control" value="{{ profile.department }}" placeholder="Contoh: IT & Digital Governance">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_position">Jabatan</label>
+                <input type="text" name="position" id="id_position" class="form-control" value="{{ profile.position }}" placeholder="Contoh: Senior Analyst">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_supervisor">Supervisor</label>
+                <input type="text" name="supervisor" id="id_supervisor" class="form-control" value="{{ profile.supervisor }}" placeholder="Nama Supervisor">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_duty_start">Jam Masuk</label>
+                <input type="time" name="duty_start" id="id_duty_start" class="form-control" value="{% if profile.duty_start %}{{ profile.duty_start|time:'H:i' }}{% endif %}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="id_duty_end">Jam Selesai</label>
+                <input type="time" name="duty_end" id="id_duty_end" class="form-control" value="{% if profile.duty_end %}{{ profile.duty_end|time:'H:i' }}{% endif %}">
+            </div>
+        </div>
+
+        <div class="form-section-title">Memo Internal</div>
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label class="form-label" for="id_memo_text">Memo Text</label>
+                <textarea name="memo_text" id="id_memo_text" class="form-control" rows="3" placeholder="Tulis catatan atau memo internal untuk ditampilkan di dashboard Anda...">{{ profile.memo_text }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            {% if profile.is_profile_complete %}
+            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Cancel</a>
+            {% endif %}
+            <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% else %}
+<!-- View Mode Profile Dashboard (Original profile view but dynamic!) -->
+<div class="profile-row">
+    <!-- Profile Card -->
+    <div class="profile-card">
+        <div class="profile-avatar-wrap">
+            <div class="profile-avatar" style="background: linear-gradient(135deg, #2d6a2d 0%, #1a3c1a 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 800;">
+                {{ profile.full_name|default:user.username|truncatechars:1|upper }}
+            </div>
+            <div class="profile-avatar-badge">
+                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+        </div>
+        <div class="profile-info" style="position: relative; width: 100%;">
+            <div class="profile-name-row" style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span class="profile-name">{{ profile.full_name|default:user.username }}</span>
+                    <span class="profile-id-badge">Official ID: ADM-{{ user.pk|stringformat:"05d" }}-JKT</span>
+                    {% if not profile.is_profile_complete %}
+                    <span class="badge-incomplete">Profil Belum Lengkap</span>
+                    {% endif %}
+                </div>
+                <a href="?edit=1" class="btn-edit-profile">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit Profile
+                </a>
+            </div>
+            <div class="profile-role" style="margin-top: 4px;">{{ profile.position|default:"System Administrator" }}</div>
+            
+            <div class="profile-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; width: 100%;">
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Department</span>
+                    <span class="profile-detail-value">{% if profile.department %}{{ profile.department }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Supervisor</span>
+                    <span class="profile-detail-value">{% if profile.supervisor %}{{ profile.supervisor }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Email</span>
+                    <span class="profile-detail-value">{% if profile.email %}{{ profile.email }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Phone</span>
+                    <span class="profile-detail-value">{% if profile.phone %}{{ profile.phone }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Kelahiran (Birth Place / Date)</span>
+                    <span class="profile-detail-value">
+                        {% if profile.birth_place or profile.birth_date %}
+                            {{ profile.birth_place|default:"-" }}{% if profile.birth_date %}, {{ profile.birth_date|date:"d M Y" }}{% endif %}
+                        {% else %}
+                            <span class="empty-field">Belum diisi</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Umur</span>
+                    <span class="profile-detail-value">{% if profile.age %}{{ profile.age }} tahun{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+                <div class="profile-detail-item">
+                    <span class="profile-detail-label">Jenis Kelamin</span>
+                    <span class="profile-detail-value">{% if profile.gender %}{{ profile.gender }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Impact Card -->
+    <div class="impact-card">
+        <div class="impact-title">System Impact</div>
+        <div class="impact-stats">
+            <div class="impact-stat">
+                <span class="impact-stat-label">Reports Validated</span>
+                <span class="impact-stat-value">1,284</span>
+            </div>
+            <div class="impact-stat">
+                <span class="impact-stat-label">Avg Response Time</span>
+                <span class="impact-stat-value">14m</span>
+            </div>
+        </div>
+        <div class="impact-duty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>On Duty: {% if profile.duty_start and profile.duty_end %}{{ profile.duty_start|time:"H:i" }} - {{ profile.duty_end|time:"H:i" }}{% else %}Belum diatur{% endif %}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Actions + Right Widgets Row (original dashboard-row widgets) -->
+<div class="dashboard-row" style="margin-top: 28px;">
+    <!-- Recent Actions -->
+    <div class="actions-card">
+        <div class="actions-header">
+            <h3>Recent Administrative Actions</h3>
+            <a href="#">
+                View Full Audit Trail
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="table-scroll">
+            <table class="actions-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Target Entity</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if actions %}
+                        {% for action in actions %}
+                        <tr>
+                            <td>
+                                <div class="action-cell">
+                                    <div class="action-icon {{ action.icon_class|default:'verified' }}">
+                                        {{ action.svg_icon|safe }}
+                                    </div>
+                                    <span class="action-name">{{ action.name }}</span>
+                                </div>
+                            </td>
+                            <td>{{ action.target }}</td>
+                            <td>{{ action.timestamp }}</td>
+                            <td><span class="status-badge-sm {{ action.status_class }}">{{ action.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 48px 24px;">
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 44px; height: 44px; opacity: 0.4; color: var(--green-dark);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="12"/>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                    </svg>
+                                    <p style="font-size: 0.88rem; font-weight: 500;">Belum ada tindakan administratif terbaru.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right Widgets -->
+    <div class="right-widgets">
+        <!-- Daily Verification Quota -->
+        <div class="widget-card">
+            <div class="widget-title">Daily Verification Quota</div>
+            <div class="quota-info">
+                <span class="quota-text">41 / 50 Reports Verified</span>
+                <span class="quota-pct">82%</span>
+            </div>
+            <div class="quota-bar">
+                <div class="quota-bar-fill" style="width: 82%"></div>
+            </div>
+        </div>
+
+        <!-- System Access Level -->
+        <div class="widget-card">
+            <div class="access-widget">
+                <div class="access-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div class="access-info">
+                    <h4>System Access Level</h4>
+                    <p>Tier 3 Root Access enabled. Multi-factor authentication is active for this session.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Internal Memo -->
+        <div class="widget-card">
+            <div class="widget-title">Internal Memo</div>
+            <div class="memo-quote">
+                <p>{% if profile.memo_text %}"{{ profile.memo_text }}"{% else %}"Belum ada memo internal."{% endif %}</p>
+            </div>
+            <div class="memo-time">{% if profile.updated_at %}{{ profile.updated_at|timesince }} ago{% else %}-{% endif %}</div>
+        </div>
+    </div>
+</div>
+{% endif %}

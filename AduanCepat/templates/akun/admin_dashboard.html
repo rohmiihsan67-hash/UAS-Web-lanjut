@@ -7,6 +7,9 @@
     <title>Admin Dashboard - AduanCepat</title>
     <meta name="description" content="Dashboard admin AduanCepat - Kelola laporan dan aduan warga.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet.js Map Assets -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -50,22 +53,57 @@
         }
 
         .sidebar-brand {
-            padding: 28px 24px 24px;
+            padding: 24px 20px;
             border-bottom: 1px solid rgba(26,60,26,0.08);
         }
 
-        .sidebar-brand h2 {
-            font-size: 1.15rem;
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--green-dark);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .brand-logo-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: currentColor;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-text h2 {
+            font-size: 1.1rem;
             font-weight: 800;
             color: var(--green-dark);
             letter-spacing: -0.3px;
+            line-height: 1.2;
+            margin: 0;
         }
 
-        .sidebar-brand p {
-            font-size: 0.72rem;
+        .brand-text p {
+            font-size: 0.65rem;
             color: var(--text-muted);
-            margin-top: 2px;
-            font-weight: 500;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 1px;
+            line-height: 1;
         }
 
         .sidebar-nav {
@@ -1085,6 +1123,7 @@
             align-items: center;
             gap: 24px;
             margin-left: 28px;
+            height: 100%;
         }
 
         .topbar-tab-link {
@@ -1092,7 +1131,9 @@
             font-weight: 500;
             color: var(--text-muted);
             text-decoration: none;
-            padding: 20px 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
             border-bottom: 2px solid transparent;
             transition: all 0.2s;
             cursor: pointer;
@@ -1454,6 +1495,243 @@
             0% { transform: scale(1); opacity: 1; }
             100% { transform: scale(2.2); opacity: 0; }
         }
+
+        /* ═══════════════════════════
+           SUB-TAB PANES (Overview, Incident Map, etc.)
+        ═══════════════════════════ */
+        .subtab-pane {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .subtab-pane.active {
+            display: block;
+        }
+
+        /* ═══════════════════════════
+           INCIDENT MAP LAYOUT & WIDGETS
+           ═══════════════════════════ */
+        .incident-map-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+            height: 600px;
+            margin-top: 8px;
+        }
+        
+        @media (max-width: 900px) {
+            .incident-map-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            #incident-leaflet-map {
+                height: 400px;
+            }
+        }
+        
+        .incident-list-panel {
+            background: var(--white);
+            border-radius: 18px;
+            border: 1px solid rgba(26,60,26,0.06);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .panel-header h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        
+        .panel-header p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .map-filters {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            border-bottom: 1px solid rgba(26,60,26,0.06);
+            padding-bottom: 12px;
+        }
+        
+        .filter-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(26,60,26,0.08);
+            background: var(--bg);
+            color: var(--text-mid);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(26,60,26,0.04);
+            color: var(--green-dark);
+        }
+        
+        .filter-btn.active {
+            background: var(--green-dark);
+            color: white;
+            border-color: var(--green-dark);
+        }
+        
+        .incident-scroll-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 4px;
+        }
+        
+        .incident-scroll-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .incident-scroll-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .incident-scroll-list::-webkit-scrollbar-thumb {
+            background: rgba(26,60,26,0.1);
+            border-radius: 10px;
+        }
+        
+        .incident-item-card {
+            background: var(--bg);
+            border: 1px solid rgba(26,60,26,0.04);
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .incident-item-card:hover {
+            border-color: rgba(26,60,26,0.12);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        
+        .incident-item-card.active {
+            background: rgba(45,106,45,0.05);
+            border-color: var(--green-mid);
+        }
+        
+        .incident-item-card h4 {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 6px;
+            line-height: 1.3;
+        }
+        
+        .item-loc {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .item-time {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .item-status {
+            display: inline-flex;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        
+        .item-status.status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .item-status.status-resolved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .map-container-area {
+            position: relative;
+            height: 100%;
+        }
+        
+        #incident-leaflet-map {
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+            border: 1px solid rgba(26,60,26,0.06);
+            z-index: 10;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px !important;
+            padding: 4px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid rgba(26,60,26,0.08) !important;
+        }
+        .leaflet-popup-tip {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* ═══════════════════════════
+           RESPONSIVE STYLE UPDATES
+        ═══════════════════════════ */
+        @media (max-width: 768px) {
+            .topbar {
+                flex-direction: column;
+                height: auto !important;
+                padding: 14px 16px;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .topbar-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 4px;
+            }
+            .topbar-tabs {
+                margin-left: 0;
+                margin-top: 8px;
+                gap: 16px;
+                width: 100%;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 6px;
+                border-bottom: 1px solid rgba(26,60,26,0.06);
+            }
+            .topbar-tab-link {
+                padding: 8px 0;
+                height: auto;
+            }
+            .incident-map-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+                gap: 16px;
+            }
+            .incident-list-panel {
+                max-height: 280px;
+                height: 280px;
+            }
+            #incident-leaflet-map {
+                height: 380px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1472,8 +1750,22 @@
     <!-- ═══ SIDEBAR ═══ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <h2>AduanCepat</h2>
-            <p>Institutional Portal</p>
+            <div class="brand-logo-container">
+                <div class="brand-logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="11" rx="1.5" />
+                        <path d="M2 10L12 2l10 8" />
+                        <path d="M8 14v3" />
+                        <path d="M12 14v3" />
+                        <path d="M16 14v3" />
+                        <path d="M2 22h20" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h2>AduanCepat</h2>
+                    <p>COMMUNITY PORTAL</p>
+                </div>
+            </div>
         </div>
 
         <nav class="sidebar-nav">
@@ -1550,7 +1842,15 @@
     <main class="main">
         <!-- Top Bar -->
         <header class="topbar">
-            <h1 class="topbar-title" id="page-title">Dashboard</h1>
+            <div style="display: flex; align-items: center; height: 100%;">
+                <h1 class="topbar-title" id="page-title">Dashboard</h1>
+                <div class="topbar-tabs">
+                    <a href="#" class="topbar-tab-link active">Overview</a>
+                    <a href="#" class="topbar-tab-link">Incident Map</a>
+                    <a href="#" class="topbar-tab-link">Public Feed</a>
+                    <a href="#" class="topbar-tab-link">My Submissions</a>
+                </div>
+            </div>
             <div class="topbar-right">
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1592,570 +1892,239 @@
             {% endif %}
 
             <!-- ═══════ TAB 1: DASHBOARD (Active by default) ═══════ -->
+            <!-- ═══════ TAB 1: DASHBOARD (Active by default) ═══════ -->
             <div id="dashboard-tab" class="tab-pane active">
                 
-                <!-- Metrics Grid -->
-                <div class="metrics-grid">
-                    <!-- Card 1: Total Reports -->
-                    <div class="metric-card">
-                        <div class="metric-header">
-                            <div class="metric-icon-box reports">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14 2 14 8 20 8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                    <polyline points="10 9 9 9 8 9"/>
-                                </svg>
-                            </div>
-                            <span class="metric-badge-status badge-status-green">+12.5%</span>
-                        </div>
-                        <div class="metric-details-wrap">
-                            <span class="metric-card-title">Total Reports</span>
-                            <span class="metric-card-value">1,284</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Pending Actions -->
-                    <div class="metric-card">
-                        <div class="metric-header">
-                            <div class="metric-icon-box pending">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" y1="8" x2="12" y2="12"/>
-                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                </svg>
-                            </div>
-                            <span class="metric-badge-status badge-status-red">High Priority</span>
-                        </div>
-                        <div class="metric-details-wrap">
-                            <span class="metric-card-title">Pending Actions</span>
-                            <span class="metric-card-value">42</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: Active Users -->
-                    <div class="metric-card">
-                        <div class="metric-header">
-                            <div class="metric-icon-box users">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="9" cy="7" r="4"/>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                </svg>
-                            </div>
-                            <span class="metric-badge-status badge-status-blue">Online Now</span>
-                        </div>
-                        <div class="metric-details-wrap">
-                            <span class="metric-card-title">Active Users</span>
-                            <span class="metric-card-value">856</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: Resolved Reports -->
-                    <div class="metric-card">
-                        <div class="metric-header">
-                            <div class="metric-icon-box resolved">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                    <polyline points="22 4 12 14.01 9 11.01"/>
-                                </svg>
-                            </div>
-                            <span class="metric-badge-status badge-status-teal">88% Success</span>
-                        </div>
-                        <div class="metric-details-wrap">
-                            <span class="metric-card-title">Resolved Reports</span>
-                            <span class="metric-card-value">1,120</span>
-                        </div>
-                    </div>
+                <!-- Sub Tab 1: Overview -->
+                <div id="overview-subtab" class="subtab-pane active">
+                    {% include 'akun/dashboard_tabs/overview.html' %}
                 </div>
 
-                <!-- Middle Grid: Report Trends & Recent Reports -->
-                <div class="dashboard-row" style="margin-bottom: 28px;">
-                    <!-- Report Trends Card -->
-                    <div class="trends-card">
-                        <div class="trends-header">
-                            <div class="trends-title-wrap">
-                                <h3>Report Trends</h3>
-                                <p>Weekly incident reporting volume</p>
-                            </div>
-                            <select class="select-filter-sm">
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                            </select>
-                        </div>
-                        
-                        <div class="chart-container-svg">
-                            <!-- Beautiful SVG Line Chart with Grid Lines -->
-                            <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none">
-                                <!-- Grid Lines -->
-                                <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
-                                <line x1="40" y1="70" x2="580" y2="70" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
-                                <line x1="40" y1="120" x2="580" y2="120" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
-                                <line x1="40" y1="170" x2="580" y2="170" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
-                                
-                                <!-- Chart Line and Shadow Gradient -->
-                                <defs>
-                                    <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="var(--green-light)" stop-opacity="0.25" />
-                                        <stop offset="100%" stop-color="var(--green-light)" stop-opacity="0.0" />
-                                    </linearGradient>
-                                </defs>
-                                <!-- Area Path -->
-                                <path d="M 40 170 L 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50 L 580 170 Z" fill="url(#chart-grad)" />
-                                <!-- Line Path -->
-                                <path d="M 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50" fill="none" stroke="var(--green-mid)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-                                
-                                <!-- Data Nodes (Dots) -->
-                                <circle cx="40" cy="140" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="130" cy="90" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="220" cy="120" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="310" cy="60" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="400" cy="80" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="490" cy="40" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                <circle cx="580" cy="50" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                                
-                                <!-- X Axis Labels -->
-                                <text x="40" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Mon</text>
-                                <text x="130" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Tue</text>
-                                <text x="220" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Wed</text>
-                                <text x="310" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Thu</text>
-                                <text x="400" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Fri</text>
-                                <text x="490" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sat</text>
-                                <text x="580" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sun</text>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <!-- Recent Reports Card -->
-                    <div class="recent-reports-card">
-                        <div class="trends-header">
-                            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">Recent Reports</h3>
-                            <a href="#" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">View All</a>
-                        </div>
-                        
-                        <div class="recent-reports-list" id="recent-reports-list-container">
-                            <!-- Report 1 -->
-                            <div class="report-list-item" data-search-term="broken water pipe jakarta selatan emergency">
-                                <div class="report-list-left">
-                                    <div class="report-color-indicator indicator-emergency"></div>
-                                    <div class="report-meta-text">
-                                        <span class="report-item-title">Broken Water Pipe</span>
-                                        <span class="report-item-sub">Jakarta Selatan • 10 mins ago</span>
-                                    </div>
-                                </div>
-                                <span class="badge-report-tag badge-tag-emergency">Emergency</span>
-                            </div>
-                            
-                            <!-- Report 2 -->
-                            <div class="report-list-item" data-search-term="public park trash bandung maintenance">
-                                <div class="report-list-left">
-                                    <div class="report-color-indicator indicator-maintenance"></div>
-                                    <div class="report-meta-text">
-                                        <span class="report-item-title">Public Park Trash</span>
-                                        <span class="report-item-sub">Bandung • 1 hour ago</span>
-                                    </div>
-                                </div>
-                                <span class="badge-report-tag badge-tag-maintenance">Maintenance</span>
-                            </div>
-                            
-                            <!-- Report 3 -->
-                            <div class="report-list-item" data-search-term="new street light surabaya verified">
-                                <div class="report-list-left">
-                                    <div class="report-color-indicator indicator-verified"></div>
-                                    <div class="report-meta-text">
-                                        <span class="report-item-title">New Street Light</span>
-                                        <span class="report-item-sub">Surabaya • 3 hours ago</span>
-                                    </div>
-                                </div>
-                                <span class="badge-report-tag badge-tag-verified">Verified</span>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Sub Tab 2: Incident Map -->
+                <div id="incident-map-subtab" class="subtab-pane">
+                    {% include 'akun/dashboard_tabs/incident_map.html' %}
                 </div>
 
-                <!-- Bottom Row: Regional Hotspots & Map View -->
-                <div class="dashboard-row">
-                    <!-- Regional Hotspots -->
-                    <div class="hotspots-card">
-                        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--green-dark);">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
-                                <path d="M2 12h20"/>
-                            </svg>
-                            Regional Hotspots
-                        </h3>
-                        <div class="hotspots-list">
-                            <div class="hotspot-item">
-                                <div class="hotspot-meta-row">
-                                    <span>Jakarta</span>
-                                    <span>75%</span>
-                                </div>
-                                <div class="hotspot-bar-track">
-                                    <div class="hotspot-bar-fill-pct" style="width: 75%;"></div>
-                                </div>
-                            </div>
-                            <div class="hotspot-item">
-                                <div class="hotspot-meta-row">
-                                    <span>Bandung</span>
-                                    <span>42%</span>
-                                </div>
-                                <div class="hotspot-bar-track">
-                                    <div class="hotspot-bar-fill-pct" style="width: 42%;"></div>
-                                </div>
-                            </div>
-                            <div class="hotspot-item">
-                                <div class="hotspot-meta-row">
-                                    <span>Surabaya</span>
-                                    <span>28%</span>
-                                </div>
-                                <div class="hotspot-bar-track">
-                                    <div class="hotspot-bar-fill-pct" style="width: 28%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Sub Tab 3: Public Feed -->
+                <div id="public-feed-subtab" class="subtab-pane">
+                    {% include 'akun/dashboard_tabs/public_feed.html' %}
+                </div>
 
-                    <!-- Interactive Map View -->
-                    <div class="map-card-wrapper">
-                        <div class="map-bg-placeholder">
-                            <div class="map-grid-pattern"></div>
-                            <!-- Map abstract visual scan elements -->
-                            <div class="map-overlay-center">
-                                <div class="map-radar-ring">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="22" y1="12" x2="18" y2="12"/>
-                                        <line x1="6" y1="12" x2="2" y2="12"/>
-                                        <line x1="12" y1="6" x2="12" y2="2"/>
-                                        <line x1="12" y1="22" x2="12" y2="18"/>
-                                    </svg>
-                                </div>
-                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-dark);">Interactive Map View</h4>
-                                <p style="font-size: 0.76rem; color: var(--text-muted);">Live activity tracking enabled</p>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Sub Tab 4: My Submissions -->
+                <div id="my-submissions-subtab" class="subtab-pane">
+                    {% include 'akun/dashboard_tabs/my_submissions.html' %}
                 </div>
 
             </div> <!-- /#dashboard-tab -->
 
             <!-- ═══════ TAB 2: PROFILE ═══════ -->
             <div id="profile-tab" class="tab-pane">
-                {% if is_editing %}
-                <!-- Edit Mode Form -->
-                <div class="profile-edit-card">
-                    <div class="actions-header" style="margin-bottom: 20px;">
-                        <h3 style="font-size: 1.2rem; color: var(--green-dark);">Edit Admin Profile</h3>
-                        {% if profile.is_profile_complete %}
-                        <a href="{% url 'admin_dashboard' %}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Cancel</a>
-                        {% endif %}
-                    </div>
-
-                    <form method="post" action="{% url 'admin_dashboard' %}">
-                        {% csrf_token %}
-
-                        <div class="form-section-title">Data Diri (Personal Info)</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="id_full_name">Nama Lengkap</label>
-                                <input type="text" name="full_name" id="id_full_name" class="form-control" value="{{ profile.full_name }}" required placeholder="Nama Lengkap Anda">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_email">Email</label>
-                                <input type="email" name="email" id="id_email" class="form-control" value="{{ profile.email }}" required placeholder="email@domain.com">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_phone">Nomor Telepon</label>
-                                <input type="text" name="phone" id="id_phone" class="form-control" value="{{ profile.phone }}" placeholder="Contoh: 08123456789">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_age">Umur</label>
-                                <input type="number" name="age" id="id_age" class="form-control" min="0" value="{% if profile.age %}{{ profile.age }}{% endif %}" placeholder="Umur Anda (Tahun)">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_gender">Jenis Kelamin</label>
-                                <select name="gender" id="id_gender" class="form-control">
-                                    <option value="" {% if not profile.gender %}selected{% endif %}>-</option>
-                                    <option value="Laki-laki" {% if profile.gender == 'Laki-laki' %}selected{% endif %}>Laki-laki</option>
-                                    <option value="Perempuan" {% if profile.gender == 'Perempuan' %}selected{% endif %}>Perempuan</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_birth_place">Tempat Lahir</label>
-                                <input type="text" name="birth_place" id="id_birth_place" class="form-control" value="{{ profile.birth_place }}" placeholder="Tempat Lahir">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_birth_date">Tanggal Lahir</label>
-                                <input type="date" name="birth_date" id="id_birth_date" class="form-control" value="{% if profile.birth_date %}{{ profile.birth_date|date:'Y-m-d' }}{% endif %}">
-                            </div>
-                        </div>
-
-                        <div class="form-section-title">Pekerjaan & Jadwal (Employment & Schedule)</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="id_department">Departemen</label>
-                                <input type="text" name="department" id="id_department" class="form-control" value="{{ profile.department }}" placeholder="Contoh: IT & Digital Governance">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_position">Jabatan</label>
-                                <input type="text" name="position" id="id_position" class="form-control" value="{{ profile.position }}" placeholder="Contoh: Senior Analyst">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_supervisor">Supervisor</label>
-                                <input type="text" name="supervisor" id="id_supervisor" class="form-control" value="{{ profile.supervisor }}" placeholder="Nama Supervisor">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_duty_start">Jam Masuk</label>
-                                <input type="time" name="duty_start" id="id_duty_start" class="form-control" value="{% if profile.duty_start %}{{ profile.duty_start|time:'H:i' }}{% endif %}">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="id_duty_end">Jam Selesai</label>
-                                <input type="time" name="duty_end" id="id_duty_end" class="form-control" value="{% if profile.duty_end %}{{ profile.duty_end|time:'H:i' }}{% endif %}">
-                            </div>
-                        </div>
-
-                        <div class="form-section-title">Memo Internal</div>
-                        <div class="form-grid">
-                            <div class="form-group full-width">
-                                <label class="form-label" for="id_memo_text">Memo Text</label>
-                                <textarea name="memo_text" id="id_memo_text" class="form-control" rows="3" placeholder="Tulis catatan atau memo internal untuk ditampilkan di dashboard Anda...">{{ profile.memo_text }}</textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            {% if profile.is_profile_complete %}
-                            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Cancel</a>
-                            {% endif %}
-                            <button type="submit" class="btn-primary">Save Changes</button>
-                        </div>
-                    </form>
-                </div>
-                {% else %}
-                <!-- View Mode Profile Dashboard (Original profile view but dynamic!) -->
-                <div class="profile-row">
-                    <!-- Profile Card -->
-                    <div class="profile-card">
-                        <div class="profile-avatar-wrap">
-                            <div class="profile-avatar" style="background: linear-gradient(135deg, #2d6a2d 0%, #1a3c1a 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 800;">
-                                {{ profile.full_name|default:user.username|truncatechars:1|upper }}
-                            </div>
-                            <div class="profile-avatar-badge">
-                                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-                            </div>
-                        </div>
-                        <div class="profile-info" style="position: relative; width: 100%;">
-                            <div class="profile-name-row" style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 10px;">
-                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                    <span class="profile-name">{{ profile.full_name|default:user.username }}</span>
-                                    <span class="profile-id-badge">Official ID: ADM-{{ user.pk|stringformat:"05d" }}-JKT</span>
-                                    {% if not profile.is_profile_complete %}
-                                    <span class="badge-incomplete">Profil Belum Lengkap</span>
-                                    {% endif %}
-                                </div>
-                                <a href="?edit=1" class="btn-edit-profile">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                    </svg>
-                                    Edit Profile
-                                </a>
-                            </div>
-                            <div class="profile-role" style="margin-top: 4px;">{{ profile.position|default:"System Administrator" }}</div>
-                            
-                            <div class="profile-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; width: 100%;">
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Department</span>
-                                    <span class="profile-detail-value">{% if profile.department %}{{ profile.department }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Supervisor</span>
-                                    <span class="profile-detail-value">{% if profile.supervisor %}{{ profile.supervisor }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Email</span>
-                                    <span class="profile-detail-value">{% if profile.email %}{{ profile.email }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Phone</span>
-                                    <span class="profile-detail-value">{% if profile.phone %}{{ profile.phone }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Kelahiran (Birth Place / Date)</span>
-                                    <span class="profile-detail-value">
-                                        {% if profile.birth_place or profile.birth_date %}
-                                            {{ profile.birth_place|default:"-" }}{% if profile.birth_date %}, {{ profile.birth_date|date:"d M Y" }}{% endif %}
-                                        {% else %}
-                                            <span class="empty-field">Belum diisi</span>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Umur</span>
-                                    <span class="profile-detail-value">{% if profile.age %}{{ profile.age }} tahun{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                                <div class="profile-detail-item">
-                                    <span class="profile-detail-label">Jenis Kelamin</span>
-                                    <span class="profile-detail-value">{% if profile.gender %}{{ profile.gender }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- System Impact Card -->
-                    <div class="impact-card">
-                        <div class="impact-title">System Impact</div>
-                        <div class="impact-stats">
-                            <div class="impact-stat">
-                                <span class="impact-stat-label">Reports Validated</span>
-                                <span class="impact-stat-value">1,284</span>
-                            </div>
-                            <div class="impact-stat">
-                                <span class="impact-stat-label">Avg Response Time</span>
-                                <span class="impact-stat-value">14m</span>
-                            </div>
-                        </div>
-                        <div class="impact-duty">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12 6 12 12 16 14"/>
-                            </svg>
-                            <span>On Duty: {% if profile.duty_start and profile.duty_end %}{{ profile.duty_start|time:"H:i" }} - {{ profile.duty_end|time:"H:i" }}{% else %}Belum diatur{% endif %}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Actions + Right Widgets Row (original dashboard-row widgets) -->
-                <div class="dashboard-row" style="margin-top: 28px;">
-                    <!-- Recent Actions -->
-                    <div class="actions-card">
-                        <div class="actions-header">
-                            <h3>Recent Administrative Actions</h3>
-                            <a href="#">
-                                View Full Audit Trail
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                    <polyline points="12 5 19 12 12 19"/>
-                                </svg>
-                            </a>
-                        </div>
-
-                        <div class="table-scroll">
-                            <table class="actions-table">
-                                <thead>
-                                    <tr>
-                                        <th>Action</th>
-                                        <th>Target Entity</th>
-                                        <th>Timestamp</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if actions %}
-                                        {% for action in actions %}
-                                        <tr>
-                                            <td>
-                                                <div class="action-cell">
-                                                    <div class="action-icon {{ action.icon_class|default:'verified' }}">
-                                                        {{ action.svg_icon|safe }}
-                                                    </div>
-                                                    <span class="action-name">{{ action.name }}</span>
-                                                </div>
-                                            </td>
-                                            <td>{{ action.target }}</td>
-                                            <td>{{ action.timestamp }}</td>
-                                            <td><span class="status-badge-sm {{ action.status_class }}">{{ action.status }}</span></td>
-                                        </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="4" style="text-align: center; padding: 48px 24px;">
-                                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted);">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 44px; height: 44px; opacity: 0.4; color: var(--green-dark);">
-                                                        <circle cx="12" cy="12" r="10"/>
-                                                        <line x1="12" y1="8" x2="12" y2="12"/>
-                                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                                    </svg>
-                                                    <p style="font-size: 0.88rem; font-weight: 500;">Belum ada tindakan administratif terbaru.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Right Widgets -->
-                    <div class="right-widgets">
-                        <!-- Daily Verification Quota -->
-                        <div class="widget-card">
-                            <div class="widget-title">Daily Verification Quota</div>
-                            <div class="quota-info">
-                                <span class="quota-text">41 / 50 Reports Verified</span>
-                                <span class="quota-pct">82%</span>
-                            </div>
-                            <div class="quota-bar">
-                                <div class="quota-bar-fill" style="width: 82%"></div>
-                            </div>
-                        </div>
-
-                        <!-- System Access Level -->
-                        <div class="widget-card">
-                            <div class="access-widget">
-                                <div class="access-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                    </svg>
-                                </div>
-                                <div class="access-info">
-                                    <h4>System Access Level</h4>
-                                    <p>Tier 3 Root Access enabled. Multi-factor authentication is active for this session.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Internal Memo -->
-                        <div class="widget-card">
-                            <div class="widget-title">Internal Memo</div>
-                            <div class="memo-quote">
-                                <p>{% if profile.memo_text %}"{{ profile.memo_text }}"{% else %}"Belum ada memo internal."{% endif %}</p>
-                            </div>
-                            <div class="memo-time">{% if profile.updated_at %}{{ profile.updated_at|timesince }} ago{% else %}-{% endif %}</div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+                {% include 'akun/dashboard_tabs/profile.html' %}
             </div>
 
             <!-- Other Tabs (Placeholders) -->
             <div id="reports-tab" class="tab-pane">
-                <div class="actions-card" style="text-align: center; padding: 60px 20px;">
-                    <h3>Reports Management</h3>
-                    <p style="color: var(--text-muted); margin-top: 10px;">Review and manage citizens complaints and submissions.</p>
-                </div>
+                {% include 'akun/dashboard_tabs/reports.html' %}
             </div>
 
             <div id="settings-tab" class="tab-pane">
-                <div class="actions-card" style="text-align: center; padding: 60px 20px;">
-                    <h3>System Settings</h3>
-                    <p style="color: var(--text-muted); margin-top: 10px;">Configure portal notifications, API keys, and administrative properties.</p>
-                </div>
+                {% include 'akun/dashboard_tabs/settings.html' %}
             </div>
 
             <div id="security-tab" class="tab-pane">
-                <div class="actions-card" style="text-align: center; padding: 60px 20px;">
-                    <h3>Security Logs & Control</h3>
-                    <p style="color: var(--text-muted); margin-top: 10px;">Monitor root login attempts, IP logs, and system audit trail.</p>
-                </div>
+                {% include 'akun/dashboard_tabs/security.html' %}
             </div>
 
         </div><!-- /.content -->
     </main>
 
     <script>
+        // Global variables for maps and incidents data
+        let mapInitialized = false;
+        let leafletMap = null;
+        let markersGroup = null;
+        let incidentsData = [];
+        try {
+            const savedData = localStorage.getItem('incidentsData');
+            if (savedData) {
+                incidentsData = JSON.parse(savedData);
+            }
+        } catch (e) {
+            console.error('Error loading incidentsData from localStorage:', e);
+        }
+
+        // Overview map global variables
+        let overviewMapInitialized = false;
+        let overviewMap = null;
+        let overviewMarkersGroup = null;
+
+        function initOverviewMap() {
+            const mapEl = document.getElementById('overview-leaflet-map');
+            if (!mapEl) return;
+
+            if (overviewMapInitialized) {
+                if (overviewMap) {
+                    setTimeout(() => {
+                        overviewMap.invalidateSize();
+                    }, 100);
+                    renderOverviewMarkers();
+                }
+                return;
+            }
+
+            // Center map to Jakarta initially
+            overviewMap = L.map('overview-leaflet-map').setView([-6.1754, 106.8272], 11);
+
+            // Google Maps Roadmap tile layer
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: '&copy; Google Maps'
+            }).addTo(overviewMap);
+
+            overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
+            overviewMapInitialized = true;
+
+            renderOverviewMarkers();
+
+            // Try to geolocate user for overview map
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    overviewMap.setView([lat, lng], 13);
+                    
+                    // Add marker for user's current location
+                    L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker-container-overview',
+                            html: '<div style="background-color: #3b82f6; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);"></div>',
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        })
+                    }).addTo(overviewMap).bindPopup('<b style="font-family:\'Inter\', sans-serif; font-size:0.75rem;">Lokasi Anda Sekarang</b>');
+                }, error => {
+                    console.warn("Overview geolocation error:", error);
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            }
+        }
+
+        function renderOverviewMarkers() {
+            if (!overviewMap || !overviewMarkersGroup) return;
+            overviewMarkersGroup.clearLayers();
+
+            incidentsData.forEach(item => {
+                const markerColor = item.status === 'resolved' ? '#166534' : '#d97706';
+                
+                const marker = L.circleMarker([item.lat, item.lng], {
+                    radius: 6,
+                    fillColor: markerColor,
+                    color: '#ffffff',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                const popupContent = `
+                    <div style="font-family: 'Inter', sans-serif; min-width: 130px; font-size:0.75rem;">
+                        <h4 style="margin: 0 0 4px 0; font-weight: 700; color: #111827;">${item.title}</h4>
+                        <p style="margin: 0 0 4px 0; color: #6b7280;">${item.loc}</p>
+                        <span class="item-status ${item.status === 'resolved' ? 'status-resolved' : 'status-pending'}" style="font-size:0.6rem; padding: 1px 6px; border-radius: 3px; font-weight:700; text-transform:uppercase;">${item.status}</span>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+                overviewMarkersGroup.addLayer(marker);
+            });
+        }
+
+        function updateDashboardOverview() {
+            const activeContent = document.getElementById('overview-active-content');
+            const emptyState = document.getElementById('overview-empty-state');
+            
+            if (!activeContent || !emptyState) return;
+
+            if (!incidentsData || incidentsData.length === 0) {
+                activeContent.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            // Show dashboard content
+            activeContent.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            // Initialize overview map
+            initOverviewMap();
+
+            // 1. Update Metrics Cards
+            const totalReportsEl = document.querySelector('.metric-card:nth-child(1) .metric-card-value');
+            if (totalReportsEl) totalReportsEl.innerText = incidentsData.length;
+
+            const pendingActionsEl = document.querySelector('.metric-card:nth-child(2) .metric-card-value');
+            if (pendingActionsEl) pendingActionsEl.innerText = incidentsData.filter(i => i.status === 'pending').length;
+
+            const resolvedReportsEl = document.querySelector('.metric-card:nth-child(4) .metric-card-value');
+            if (resolvedReportsEl) resolvedReportsEl.innerText = incidentsData.filter(i => i.status === 'resolved').length;
+
+            // 2. Update Recent Reports list
+            const recentListEl = document.querySelector('.recent-reports-list');
+            if (recentListEl) {
+                let html = '';
+                const recentIncidents = [...incidentsData].reverse().slice(0, 5);
+                
+                recentIncidents.forEach(item => {
+                    const statusClass = item.status === 'resolved' ? 'badge-tag-verified' : 'badge-tag-emergency';
+                    const indicatorClass = item.status === 'resolved' ? 'indicator-verified' : 'indicator-emergency';
+                    
+                    html += `
+                        <div class="report-list-item" style="animation: fadeInUp 0.3s ease;">
+                            <div class="report-list-left">
+                                <div class="report-color-indicator ${indicatorClass}"></div>
+                                <div class="report-meta-text">
+                                    <span class="report-item-title">${item.title}</span>
+                                    <span class="report-item-sub">${item.loc}</span>
+                                </div>
+                            </div>
+                            <span class="badge-report-tag ${statusClass}">${item.status}</span>
+                        </div>
+                    `;
+                });
+                recentListEl.innerHTML = html;
+            }
+
+            // 3. Update Hotspots Panel
+            const hotspotsListEl = document.querySelector('.hotspots-list');
+            if (hotspotsListEl) {
+                const locationCounts = {};
+                incidentsData.forEach(item => {
+                    const locName = item.loc || 'Unknown';
+                    locationCounts[locName] = (locationCounts[locName] || 0) + 1;
+                });
+
+                let html = '';
+                Object.keys(locationCounts).forEach(loc => {
+                    const count = locationCounts[loc];
+                    const pct = Math.min(Math.round((count / incidentsData.length) * 100), 100);
+                    html += `
+                        <div class="hotspot-item">
+                            <div class="hotspot-meta-row">
+                                 <span>${loc}</span>
+                                 <span>${pct}%</span>
+                            </div>
+                            <div class="hotspot-bar-track">
+                                 <div class="hotspot-bar-fill-pct" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                hotspotsListEl.innerHTML = html;
+            }
+        }
+
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebar-overlay').classList.toggle('open');
@@ -2190,6 +2159,7 @@
 
         // Initialize tabs on page load
         document.addEventListener('DOMContentLoaded', () => {
+            updateDashboardOverview();
             const isEditing = {% if is_editing %}true{% else %}false{% endif %};
             if (isEditing) {
                 switchTab('profile-tab');
@@ -2206,6 +2176,265 @@
                     // Close sidebar on mobile
                     document.getElementById('sidebar').classList.remove('open');
                     document.getElementById('sidebar-overlay').classList.remove('open');
+                });
+            });
+
+            // Leaflet Map Logic for Incident Map
+            function initLeafletMap() {
+                if (mapInitialized) {
+                    if (leafletMap) {
+                        setTimeout(() => {
+                            leafletMap.invalidateSize();
+                        }, 100);
+                    }
+                    return;
+                }
+
+                const mapEl = document.getElementById('incident-leaflet-map');
+                if (!mapEl) return;
+
+                // Center map to Jakarta initially
+                leafletMap = L.map('incident-leaflet-map').setView([-6.1754, 106.8272], 12);
+
+                // Google Maps Roadmap tile layer
+                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                    maxZoom: 20,
+                    attribution: '&copy; Google Maps'
+                }).addTo(leafletMap);
+
+                markersGroup = L.layerGroup().addTo(leafletMap);
+                mapInitialized = true;
+                
+                renderIncidentList('all');
+                renderMarkers('all');
+
+                // Try to get user's current location
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Set map view to user's location with closer zoom
+                        leafletMap.setView([lat, lng], 14);
+                        
+                        // Add marker for user's current location
+                        L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'user-location-marker-container',
+                                html: '<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);"></div>',
+                                iconSize: [16, 16],
+                                iconAnchor: [8, 8]
+                            })
+                        }).addTo(leafletMap).bindPopup('<b style="font-family:\'Inter\', sans-serif;">Lokasi Anda Sekarang</b>').openPopup();
+                    }, error => {
+                        console.warn("Geolocation access denied or error:", error);
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                }
+
+                // Map click listener to add a report
+                leafletMap.on('click', (e) => {
+                    const lat = e.latlng.lat.toFixed(6);
+                    const lng = e.latlng.lng.toFixed(6);
+
+                    // Form html inside Leaflet popup
+                    const popupHtml = `
+                        <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 6px 2px;">
+                            <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; font-weight: 700; color: var(--green-dark);">Tambah Laporan Kejadian</h4>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <input type="text" id="new-incident-title" placeholder="Judul Kejadian (misal: Lampu Mati)" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
+                                <input type="text" id="new-incident-desc" placeholder="Deskripsi Kejadian..." style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
+                                <select id="new-incident-status" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                                <button onclick="saveNewIncident(${lat}, ${lng})" style="width:100%; padding:8px; background:var(--green-dark); color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;">Simpan Laporan</button>
+                            </div>
+                        </div>
+                    `;
+
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(popupHtml)
+                        .openOn(leafletMap);
+                });
+            }
+
+            window.saveNewIncident = function(lat, lng) {
+                const titleInput = document.getElementById('new-incident-title');
+                const descInput = document.getElementById('new-incident-desc');
+                const statusSelect = document.getElementById('new-incident-status');
+
+                if (!titleInput || !titleInput.value.trim()) {
+                    alert('Judul laporan tidak boleh kosong!');
+                    return;
+                }
+
+                const title = titleInput.value.trim();
+                const desc = descInput ? descInput.value.trim() : '';
+                const status = statusSelect ? statusSelect.value : 'pending';
+
+                const newIncident = {
+                    id: Date.now(),
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lng),
+                    status: status,
+                    title: title,
+                    loc: `Lokasi: ${lat}, ${lng}`,
+                    desc: desc,
+                    active: false
+                };
+
+                incidentsData.push(newIncident);
+                try {
+                    localStorage.setItem('incidentsData', JSON.stringify(incidentsData));
+                } catch (e) {
+                    console.error('Error saving incidentsData to localStorage:', e);
+                }
+                
+                // Close popup
+                if (leafletMap) {
+                    leafletMap.closePopup();
+                }
+
+                // Refresh list and markers
+                const activeFilter = document.querySelector('.map-filters .filter-btn.active').getAttribute('data-filter') || 'all';
+                renderIncidentList(activeFilter);
+                renderMarkers(activeFilter);
+                updateDashboardOverview();
+            };
+
+            function renderIncidentList(filter = 'all') {
+                const listContainer = document.getElementById('map-incident-list');
+                if (!listContainer) return;
+
+                const filtered = incidentsData.filter(item => filter === 'all' || item.status === filter);
+
+                if (filtered.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="empty-state-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); padding: 48px 16px; text-align: center; border: 2px dashed rgba(26,60,26,0.08); border-radius: 12px; margin-top: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 44px; height: 44px; opacity: 0.5; color: var(--green-dark);">
+                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                                <path d="M12 8v4"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                            <p style="font-size: 0.84rem; font-weight: 600; color: var(--text-dark);">Belum Ada Laporan</p>
+                            <p style="font-size: 0.76rem; line-height: 1.4;">Klik di mana saja pada peta untuk menambahkan laporan kejadian baru di lokasi tersebut.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(item => {
+                    const statusClass = item.status === 'resolved' ? 'status-resolved' : 'status-pending';
+                    const activeClass = item.active ? 'active' : '';
+                    html += `
+                        <div class="incident-item-card ${activeClass}" data-id="${item.id}" data-lat="${item.lat}" data-lng="${item.lng}">
+                            <div class="item-status ${statusClass}">${item.status}</div>
+                            <h4>${item.title}</h4>
+                            <p class="item-loc">${item.loc}</p>
+                            <p class="item-time">Baru saja ditambahkan</p>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = html;
+
+                // Re-bind click event to card items
+                document.querySelectorAll('.incident-item-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const id = parseInt(card.getAttribute('data-id'));
+                        
+                        incidentsData.forEach(item => item.active = (item.id === id));
+                        renderIncidentList(filter);
+
+                        const lat = parseFloat(card.getAttribute('data-lat'));
+                        const lng = parseFloat(card.getAttribute('data-lng'));
+                        
+                        if (leafletMap) {
+                            leafletMap.setView([lat, lng], 15);
+                            markersGroup.eachLayer(layer => {
+                                if (layer.getLatLng().lat === lat && layer.getLatLng().lng === lng) {
+                                    layer.openPopup();
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+
+            function renderMarkers(filter) {
+                if (!leafletMap || !markersGroup) return;
+                markersGroup.clearLayers();
+
+                incidentsData.forEach(item => {
+                    if (filter !== 'all' && item.status !== filter) return;
+
+                    const markerColor = item.status === 'resolved' ? '#166534' : '#d97706';
+                    
+                    const marker = L.circleMarker([item.lat, item.lng], {
+                        radius: 8,
+                        fillColor: markerColor,
+                        color: '#ffffff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+
+                    const popupContent = `
+                        <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
+                            <h4 style="margin: 0 0 6px 0; font-size: 0.88rem; font-weight: 700; color: #111827;">${item.title}</h4>
+                            <p style="margin: 0 0 4px 0; font-size: 0.76rem; color: #6b7280;">${item.loc}</p>
+                            <p style="margin: 0 0 8px 0; font-size: 0.78rem; line-height: 1.4; color: #374151;">${item.desc}</p>
+                            <span class="item-status ${item.status === 'resolved' ? 'status-resolved' : 'status-pending'}" style="font-size:0.65rem; padding: 2px 8px; border-radius: 4px; font-weight:700; text-transform:uppercase;">${item.status}</span>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    markersGroup.addLayer(marker);
+                });
+            }
+
+            // Map Filter triggers
+            document.querySelectorAll('.map-filters .filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.map-filters .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const filter = btn.getAttribute('data-filter');
+                    renderIncidentList(filter);
+                    renderMarkers(filter);
+                });
+            });
+
+            // Topbar tab triggers
+            document.querySelectorAll('.topbar-tab-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.topbar-tab-link').forEach(el => el.classList.remove('active'));
+                    link.classList.add('active');
+
+                    const tabName = link.innerText.trim().toLowerCase().replace(' ', '-');
+                    
+                    document.querySelectorAll('.subtab-pane').forEach(pane => pane.classList.remove('active'));
+                    
+                    const targetPane = document.getElementById(`${tabName}-subtab`);
+                    if (targetPane) {
+                        targetPane.classList.add('active');
+                        if (tabName === 'incident-map') {
+                            initLeafletMap();
+                        } else if (tabName === 'overview') {
+                            if (overviewMap) {
+                                setTimeout(() => {
+                                    overviewMap.invalidateSize();
+                                }, 100);
+                            }
+                        }
+                    }
                 });
             });
 

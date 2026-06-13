@@ -1,0 +1,25 @@
+<div class="incident-map-layout">
+    <!-- Left Side: Filters and List of Incidents -->
+    <div class="incident-list-panel">
+        <div class="panel-header">
+            <h3>Daftar Laporan Kejadian</h3>
+            <p>Klik laporan untuk melihat lokasi di peta</p>
+            
+            <!-- Filters -->
+            <div class="map-filters">
+                <button class="filter-btn active" data-filter="all">Semua</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="resolved">Resolved</button>
+            </div>
+        </div>
+        
+        <div class="incident-scroll-list" id="map-incident-list">
+            <!-- Halaman akan terisi secara dinamis saat laporan ditambahkan -->
+        </div>
+    </div>
+    
+    <!-- Right Side: Peta -->
+    <div class="map-container-area">
+        <div id="incident-leaflet-map"></div>
+    </div>
+</div>

@@ -34,11 +34,15 @@ def admin_dashboard_view(request):
     else:
         form = AdminProfileForm(instance=profile)
 
+    from django.contrib.auth.models import User
+    user_count = User.objects.count()
+
     context = {
         'profile': profile,
         'form': form,
         'is_editing': request.GET.get('edit') == '1' or not profile.is_profile_complete,
         'actions': [],  # Data tindakan administratif kosong
+        'user_count': user_count,
     }
     return render(request, 'akun/admin_dashboard.html', context)
 

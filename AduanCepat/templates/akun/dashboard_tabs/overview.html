@@ -1,0 +1,248 @@
+<div id="overview-active-content" style="display: none;">
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+        <!-- Card 1: Total Reports -->
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon-box reports">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <span class="metric-badge-status badge-status-green">+12.5%</span>
+            </div>
+            <div class="metric-details-wrap">
+                <span class="metric-card-title">Total Reports</span>
+                <span class="metric-card-value">1,284</span>
+            </div>
+        </div>
+
+        <!-- Card 2: Pending Actions -->
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon-box pending">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <span class="metric-badge-status badge-status-red">High Priority</span>
+            </div>
+            <div class="metric-details-wrap">
+                <span class="metric-card-title">Pending Actions</span>
+                <span class="metric-card-value">42</span>
+            </div>
+        </div>
+
+        <!-- Card 3: Active Users -->
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon-box users">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <span class="metric-badge-status badge-status-blue">Registered</span>
+            </div>
+            <div class="metric-details-wrap">
+                <span class="metric-card-title">Active Users</span>
+                <span class="metric-card-value">{{ user_count|default:"0" }}</span>
+            </div>
+        </div>
+
+        <!-- Card 4: Resolved Reports -->
+        <div class="metric-card">
+            <div class="metric-header">
+                <div class="metric-icon-box resolved">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <span class="metric-badge-status badge-status-teal">88% Success</span>
+            </div>
+            <div class="metric-details-wrap">
+                <span class="metric-card-title">Resolved Reports</span>
+                <span class="metric-card-value">1,120</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle Grid: Report Trends & Recent Reports -->
+    <div class="dashboard-row" style="margin-bottom: 28px;">
+        <!-- Report Trends Card -->
+        <div class="trends-card">
+            <div class="trends-header">
+                <div class="trends-title-wrap">
+                    <h3>Report Trends</h3>
+                    <p>Weekly incident reporting volume</p>
+                </div>
+                <select class="select-filter-sm">
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
+                </select>
+            </div>
+            
+            <div class="chart-container-svg">
+                <!-- Beautiful SVG Line Chart with Grid Lines -->
+                <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none">
+                    <!-- Grid Lines -->
+                    <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="70" x2="580" y2="70" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="120" x2="580" y2="120" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="170" x2="580" y2="170" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    
+                    <!-- Chart Line and Shadow Gradient -->
+                    <defs>
+                        <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="var(--green-light)" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="var(--green-light)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Area Path -->
+                    <path d="M 40 170 L 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50 L 580 170 Z" fill="url(#chart-grad)" />
+                    <!-- Line Path -->
+                    <path d="M 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50" fill="none" stroke="var(--green-mid)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                    
+                    <!-- Data Nodes (Dots) -->
+                    <circle cx="40" cy="140" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="130" cy="90" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="220" cy="120" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="310" cy="60" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="400" cy="80" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="490" cy="40" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <circle cx="580" cy="50" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    
+                    <!-- X Axis Labels -->
+                    <text x="40" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Mon</text>
+                    <text x="130" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Tue</text>
+                    <text x="220" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Wed</text>
+                    <text x="310" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Thu</text>
+                    <text x="400" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Fri</text>
+                    <text x="490" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sat</text>
+                    <text x="580" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sun</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Recent Reports Card -->
+        <div class="recent-reports-card">
+            <div class="trends-header">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">Recent Reports</h3>
+                <a href="#" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">View All</a>
+            </div>
+            
+            <div class="recent-reports-list" id="recent-reports-list-container">
+                <!-- Report 1 -->
+                <div class="report-list-item" data-search-term="broken water pipe jakarta selatan emergency">
+                    <div class="report-list-left">
+                        <div class="report-color-indicator indicator-emergency"></div>
+                        <div class="report-meta-text">
+                            <span class="report-item-title">Broken Water Pipe</span>
+                            <span class="report-item-sub">Jakarta Selatan • 10 mins ago</span>
+                        </div>
+                    </div>
+                    <span class="badge-report-tag badge-tag-emergency">Emergency</span>
+                </div>
+                
+                <!-- Report 2 -->
+                <div class="report-list-item" data-search-term="public park trash bandung maintenance">
+                    <div class="report-list-left">
+                        <div class="report-color-indicator indicator-maintenance"></div>
+                        <div class="report-meta-text">
+                            <span class="report-item-title">Public Park Trash</span>
+                            <span class="report-item-sub">Bandung • 1 hour ago</span>
+                        </div>
+                    </div>
+                    <span class="badge-report-tag badge-tag-maintenance">Maintenance</span>
+                </div>
+                
+                <!-- Report 3 -->
+                <div class="report-list-item" data-search-term="new street light surabaya verified">
+                    <div class="report-list-left">
+                        <div class="report-color-indicator indicator-verified"></div>
+                        <div class="report-meta-text">
+                            <span class="report-item-title">New Street Light</span>
+                            <span class="report-item-sub">Surabaya • 3 hours ago</span>
+                        </div>
+                    </div>
+                    <span class="badge-report-tag badge-tag-verified">Verified</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Regional Hotspots & Map View -->
+    <div class="dashboard-row">
+        <!-- Regional Hotspots -->
+        <div class="hotspots-card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: var(--green-dark);">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                    <path d="M2 12h20"/>
+                </svg>
+                Regional Hotspots
+            </h3>
+            <div class="hotspots-list">
+                <div class="hotspot-item">
+                    <div class="hotspot-meta-row">
+                        <span>Jakarta</span>
+                        <span>75%</span>
+                    </div>
+                    <div class="hotspot-bar-track">
+                        <div class="hotspot-bar-fill-pct" style="width: 75%;"></div>
+                    </div>
+                </div>
+                <div class="hotspot-item">
+                    <div class="hotspot-meta-row">
+                        <span>Bandung</span>
+                        <span>42%</span>
+                    </div>
+                    <div class="hotspot-bar-track">
+                        <div class="hotspot-bar-fill-pct" style="width: 42%;"></div>
+                    </div>
+                </div>
+                <div class="hotspot-item">
+                    <div class="hotspot-meta-row">
+                        <span>Surabaya</span>
+                        <span>28%</span>
+                    </div>
+                    <div class="hotspot-bar-track">
+                        <div class="hotspot-bar-fill-pct" style="width: 28%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Map View -->
+        <div class="map-card-wrapper">
+            <div id="overview-leaflet-map" style="width: 100%; height: 100%; z-index: 10;"></div>
+        </div>
+    </div>
+</div> <!-- /#overview-active-content -->
+
+<div id="overview-empty-state" style="display: block;">
+    <div class="empty-state-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); padding: 80px 24px; text-align: center; border: 2px dashed rgba(26,60,26,0.12); border-radius: 24px; background: var(--white); box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 56px; height: 56px; color: var(--green-dark); opacity: 0.6;">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-dark);">Belum Ada Aktivitas Laporan</h3>
+        <p style="font-size: 0.88rem; max-width: 460px; line-height: 1.5;">
+            Saat ini belum ada laporan kejadian yang masuk ke sistem. Silakan buka menu <strong>Incident Map</strong> untuk mulai menambahkan laporan secara interaktif di peta.
+        </p>
+        <button onclick="document.querySelectorAll('.topbar-tab-link')[1].click()" style="padding: 10px 20px; background: var(--green-dark); color: white; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
+            Buka Incident Map
+        </button>
+    </div>
+</div>
