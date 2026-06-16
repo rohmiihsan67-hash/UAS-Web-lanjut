@@ -1,0 +1,475 @@
+{% extends 'user/base_user.html' %}
+{% block title %}Create New Report{% endblock %}
+{% block meta_desc %}Buat laporan insiden baru ke pihak berwenang melalui AduanCepat.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .report-layout {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 24px;
+        align-items: start;
+        margin-top: 4px;
+    }
+    @media (max-width: 960px) { .report-layout { grid-template-columns: 1fr; } }
+
+    /* Stepper */
+    .stepper {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 28px;
+    }
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .step-circle {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.75rem; font-weight: 700;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .step-circle.active { background: var(--green-dark); color: white; }
+    .step-circle.done   { background: #16a34a; color: white; }
+    .step-circle.idle   { background: var(--bg); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .step-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .step-label.active { color: var(--green-dark); }
+    .step-divider {
+        flex: 1;
+        height: 1.5px;
+        background: var(--border);
+        margin: 0 12px;
+        min-width: 24px;
+    }
+
+    /* Form card */
+    .report-form-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+    }
+    .report-section-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+    .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-dark); }
+    .form-hint  { font-size: 0.72rem; color: var(--text-muted); }
+    .form-control {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-dark);
+        background: var(--white);
+        outline: none;
+        transition: all 0.15s;
+        width: 100%;
+    }
+    .form-control:focus {
+        border-color: var(--green-dark);
+        box-shadow: 0 0 0 3px rgba(26,60,26,0.08);
+    }
+    .form-control::placeholder { color: var(--text-muted); }
+    textarea.form-control { resize: vertical; min-height: 100px; }
+    select.form-control { cursor: pointer; }
+
+    /* Priority buttons */
+    .priority-group { display: flex; gap: 8px; }
+    .priority-btn {
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: 'Inter', sans-serif;
+    }
+    .priority-btn:hover { border-color: var(--green-dark); color: var(--green-dark); }
+    .priority-btn.active-low    { border-color: #6b7280; background: #f3f4f6; color: #374151; }
+    .priority-btn.active-medium { border-color: var(--green-dark); background: var(--green-pale); color: var(--green-dark); }
+    .priority-btn.active-high   { border-color: #dc2626; background: #fee2e2; color: #dc2626; }
+
+    /* Map placeholder */
+    .map-placeholder {
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        position: relative;
+        height: 200px;
+        background: linear-gradient(135deg, #e8ede3 0%, #d4ddc8 100%);
+        margin-bottom: 12px;
+        cursor: pointer;
+    }
+    .map-placeholder-grid {
+        position: absolute; inset: 0;
+        background-image:
+            linear-gradient(rgba(26,60,26,0.07) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,60,26,0.07) 1px, transparent 1px);
+        background-size: 32px 32px;
+    }
+    .map-pin-center {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px; height: 16px;
+        background: #ef4444;
+        border-radius: 50% 50% 50% 0;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+    }
+    .map-use-location-btn {
+        position: absolute;
+        bottom: 10px; right: 10px;
+        display: flex; align-items: center; gap: 5px;
+        padding: 7px 12px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem; font-weight: 600;
+        color: var(--green-dark);
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.15s;
+        font-family: 'Inter', sans-serif;
+    }
+    .map-use-location-btn:hover { background: var(--green-pale); }
+    .map-use-location-btn svg { width: 13px; height: 13px; }
+
+    /* Upload area */
+    .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-sm);
+        padding: 32px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg);
+        position: relative;
+    }
+    .upload-area:hover { border-color: var(--green-dark); background: var(--green-pale); }
+    .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon {
+        width: 44px; height: 44px;
+        background: var(--green-pale);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 12px;
+        color: var(--green-dark);
+    }
+    .upload-icon svg { width: 20px; height: 20px; }
+    .upload-text { font-size: 0.85rem; color: var(--text-muted); }
+    .upload-text a { color: var(--green-dark); font-weight: 600; }
+    .upload-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    .upload-preview {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .preview-thumb {
+        width: 60px; height: 60px;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        background: var(--bg);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--text-muted);
+        font-size: 0.65rem;
+        font-weight: 600;
+        position: relative;
+        overflow: hidden;
+    }
+    .preview-thumb.add {
+        cursor: pointer;
+        border-style: dashed;
+        transition: all 0.15s;
+    }
+    .preview-thumb.add:hover { border-color: var(--green-dark); color: var(--green-dark); }
+    .preview-thumb svg { width: 22px; height: 22px; }
+
+    /* Form actions */
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        margin-top: 4px;
+    }
+
+    /* Right sidebar */
+    .report-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .info-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+    }
+    .info-card-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+    .info-card-title svg { width: 15px; height: 15px; color: var(--green-dark); }
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(26,60,26,0.05);
+        font-size: 0.8rem;
+    }
+    .info-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-item-icon {
+        width: 28px; height: 28px;
+        border-radius: 7px;
+        background: var(--green-pale);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        color: var(--green-dark);
+    }
+    .info-item-icon svg { width: 13px; height: 13px; }
+    .info-item-label { font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+    .info-item-desc  { color: var(--text-muted); line-height: 1.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Create New Report</h1>
+    <p class="page-subtitle">Submit a new incident or concern to your local authorities. Your report helps make the community better.</p>
+</div>
+
+<!-- Stepper -->
+<div class="stepper">
+    <div class="step">
+        <div class="step-circle active">1</div>
+        <span class="step-label active">Details</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step">
+        <div class="step-circle idle">2</div>
+        <span class="step-label">Location</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step">
+        <div class="step-circle idle">3</div>
+        <span class="step-label">Evidence</span>
+    </div>
+</div>
+
+<div class="report-layout">
+    <!-- Form -->
+    <form method="post" action="{% url 'user_new_report' %}" id="new-report-form">
+        {% csrf_token %}
+        <input type="hidden" name="priority" id="priority-value" value="medium">
+
+        <div class="report-form-card">
+            <!-- Report Title -->
+            <div class="form-group">
+                <label class="form-label" for="id_title">Report Title</label>
+                <input type="text" name="title" id="id_title" class="form-control" placeholder="Briefly describe the issue (e.g. Broken streetlight or 5m Ave)" required>
+            </div>
+
+            <!-- Category + Priority -->
+            <div style="display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; margin-bottom:16px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="id_category">Category</label>
+                    <select name="category" id="id_category" class="form-control">
+                        <option value="infrastructure">Infrastructure</option>
+                        <option value="environment">Environment</option>
+                        <option value="public_safety">Public Safety</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="form-label" style="margin-bottom:8px;">Priority Level</div>
+                    <div class="priority-group">
+                        <button type="button" class="priority-btn" id="btn-low"    onclick="setPriority('low')">Low</button>
+                        <button type="button" class="priority-btn active-medium" id="btn-medium" onclick="setPriority('medium')">Medium</button>
+                        <button type="button" class="priority-btn" id="btn-high"   onclick="setPriority('high')">High</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label class="form-label" for="id_description">Description</label>
+                <textarea name="description" id="id_description" class="form-control" placeholder="Provide as much detail as possible about the issue..."></textarea>
+            </div>
+
+            <!-- Incident Location -->
+            <div class="report-section-title">Incident Location</div>
+            <div class="map-placeholder" id="map-area">
+                <div class="map-placeholder-grid"></div>
+                <div class="map-pin-center"></div>
+                <button type="button" class="map-use-location-btn" onclick="useCurrentLocation()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+                    Use Current Location
+                </button>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <input type="text" name="location_address" id="id_location" class="form-control" placeholder="Enter street address or landmark">
+            </div>
+
+            <!-- Evidence -->
+            <div class="report-section-title">Supporting Evidence (Photo/Video)</div>
+            <div class="upload-area" id="upload-area">
+                <input type="file" accept="image/*,video/*" multiple id="file-input" onchange="previewFiles(event)">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+                </div>
+                <div class="upload-text">Drag and drop files or <a>browse</a></div>
+                <div class="upload-hint">PNG, JPG or MP4 (Max 20MB)</div>
+            </div>
+            <div class="upload-preview" id="preview-container" style="margin-top:12px;">
+                <div class="preview-thumb add" onclick="document.getElementById('file-input').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="history.back()">Save as Draft</button>
+                <button type="submit" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Submit Report
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Right Sidebar -->
+    <div class="report-sidebar">
+        <div class="info-card">
+            <div class="info-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Verified Reports
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Verified users get faster responses from city officials.</div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                Data Privacy
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Your submission data is encrypted and handled professionally.</div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                Status Tracking
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Get real-time notifications about your report's progress.</div>
+        </div>
+
+        <div class="info-card" style="background:var(--green-dark); border-color:transparent;">
+            <div style="font-size:0.82rem; font-weight:700; color:white; margin-bottom:8px;">Tips Laporan Efektif</div>
+            <div class="info-item" style="border-color:rgba(255,255,255,0.1);">
+                <div class="info-item-icon" style="background:rgba(255,255,255,0.1); color:white;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div>
+                    <div class="info-item-label" style="color:white;">Judul Jelas</div>
+                    <div class="info-item-desc" style="color:rgba(255,255,255,0.65);">Gunakan judul yang spesifik dan deskriptif.</div>
+                </div>
+            </div>
+            <div class="info-item" style="border-color:rgba(255,255,255,0.1);">
+                <div class="info-item-icon" style="background:rgba(255,255,255,0.1); color:white;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                    <div class="info-item-label" style="color:white;">Lokasi Akurat</div>
+                    <div class="info-item-desc" style="color:rgba(255,255,255,0.65);">Tandai lokasi persis di peta untuk respon cepat.</div>
+                </div>
+            </div>
+            <div class="info-item" style="border-color:rgba(255,255,255,0.1); padding-bottom:0;">
+                <div class="info-item-icon" style="background:rgba(255,255,255,0.1); color:white;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <div>
+                    <div class="info-item-label" style="color:white;">Sertakan Bukti</div>
+                    <div class="info-item-desc" style="color:rgba(255,255,255,0.65);">Foto/video mempercepat proses verifikasi.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function setPriority(level) {
+        document.getElementById('priority-value').value = level;
+        document.getElementById('btn-low').className    = 'priority-btn' + (level === 'low'    ? ' active-low'    : '');
+        document.getElementById('btn-medium').className = 'priority-btn' + (level === 'medium' ? ' active-medium' : '');
+        document.getElementById('btn-high').className   = 'priority-btn' + (level === 'high'   ? ' active-high'   : '');
+    }
+
+    function useCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lng = pos.coords.longitude.toFixed(6);
+                document.getElementById('id_location').value = `${lat}, ${lng}`;
+            }, function() {
+                alert('Tidak dapat mengakses lokasi. Pastikan izin lokasi diaktifkan.');
+            });
+        }
+    }
+
+    function previewFiles(event) {
+        const container = document.getElementById('preview-container');
+        const addBtn = container.querySelector('.preview-thumb.add');
+        Array.from(event.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const thumb = document.createElement('div');
+                thumb.className = 'preview-thumb';
+                thumb.style.backgroundImage = `url(${e.target.result})`;
+                thumb.style.backgroundSize = 'cover';
+                thumb.style.backgroundPosition = 'center';
+                container.insertBefore(thumb, addBtn);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Drag & drop
+    const uploadArea = document.getElementById('upload-area');
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--green-dark)'; });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--border)';
+        const input = document.getElementById('file-input');
+        input.files = e.dataTransfer.files;
+        previewFiles({ target: input });
+    });
+</script>
+{% endblock %}

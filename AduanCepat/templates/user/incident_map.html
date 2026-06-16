@@ -1,0 +1,264 @@
+{% extends 'user/base_user.html' %}
+{% block title %}Incident Map{% endblock %}
+{% block meta_desc %}Peta insiden laporan warga AduanCepat di seluruh wilayah.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .map-layout {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    @media (max-width: 1000px) { .map-layout { grid-template-columns: 1fr; } }
+
+    .map-container {
+        border-radius: var(--radius);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        position: relative;
+        min-height: 500px;
+        background: #e8ede3;
+    }
+    #map {
+        width: 100%;
+        height: 500px;
+    }
+    .map-overlay-badge {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        background: var(--white);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--green-dark);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+    }
+    .map-overlay-badge span { color: var(--text-muted); font-weight:400; }
+
+    .map-filter-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+    .filter-chip {
+        padding: 5px 12px;
+        border-radius: 99px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .filter-chip:hover, .filter-chip.active {
+        border-color: var(--green-dark);
+        background: var(--green-pale);
+        color: var(--green-dark);
+    }
+
+    .incident-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 520px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    .incident-list::-webkit-scrollbar { width: 4px; }
+    .incident-list::-webkit-scrollbar-track { background: var(--bg); border-radius: 2px; }
+    .incident-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .incident-item {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .incident-item:hover {
+        border-color: rgba(26,60,26,0.25);
+        transform: translateX(2px);
+        box-shadow: var(--shadow-sm);
+    }
+    .incident-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+    }
+    .incident-loc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+    .incident-loc svg { width: 11px; height: 11px; }
+    .incident-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .incident-date { font-size: 0.72rem; color: var(--text-muted); }
+
+    .no-map-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 500px;
+        background: linear-gradient(135deg, #e8ede3 0%, #d4ddc8 100%);
+        color: var(--text-muted);
+        gap: 12px;
+    }
+    .no-map-placeholder svg { width: 60px; height: 60px; opacity: 0.4; }
+    .map-grid {
+        position: absolute;
+        inset: 0;
+        background-image: 
+            linear-gradient(rgba(26,60,26,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(26,60,26,0.08) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+    .map-center-marker {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+    .map-center-marker .pulse-dot {
+        width: 16px;
+        height: 16px;
+        background: var(--green-dark);
+        border-radius: 50%;
+        margin: 0 auto 6px;
+        position: relative;
+    }
+    .map-center-marker .pulse-dot::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 2px solid var(--green-dark);
+        opacity: 0.3;
+        animation: ripple 2s infinite;
+    }
+    @keyframes ripple {
+        0% { transform: scale(0.8); opacity: 0.4; }
+        100% { transform: scale(1.8); opacity: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Incident Map</h1>
+    <p class="page-subtitle">Peta sebaran insiden dan laporan dari seluruh wilayah komunitas.</p>
+</div>
+
+<div class="map-filter-bar">
+    <button class="filter-chip active" id="filter-all">Semua</button>
+    <button class="filter-chip" id="filter-infra">Infrastructure</button>
+    <button class="filter-chip" id="filter-env">Environment</button>
+    <button class="filter-chip" id="filter-safety">Public Safety</button>
+    <button class="filter-chip" id="filter-resolved">Resolved</button>
+    <button class="filter-chip" id="filter-progress">In Progress</button>
+</div>
+
+<div class="map-layout">
+    <!-- Map -->
+    <div class="map-container">
+        <div class="map-grid"></div>
+        <!-- Interactive placeholder map -->
+        <div class="map-center-marker">
+            <div class="pulse-dot"></div>
+            <div style="font-size:0.75rem; font-weight:600; color:var(--green-dark); background:white; padding:4px 10px; border-radius:6px; box-shadow:var(--shadow-sm);">Pusat Kota</div>
+        </div>
+
+        <!-- Sample pin markers -->
+        {% for s in submissions %}
+        <div class="map-pin" style="
+            position: absolute;
+            top: {{ forloop.counter|add:20 }}%;
+            left: {{ forloop.counter|add:15 }}%;
+            transform: translate(-50%, -50%);
+        ">
+            <div style="
+                width: 12px; height: 12px;
+                background: {% if s.status == 'resolved' %}#16a34a{% elif s.status == 'in_progress' %}#2563eb{% else %}#d97706{% endif %};
+                border-radius: 50%;
+                border: 2px solid white;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                cursor: pointer;
+                transition: transform 0.15s;
+            " title="{{ s.title }}" onmouseover="this.style.transform='scale(1.5)'" onmouseout="this.style.transform='scale(1)'"></div>
+        </div>
+        {% endfor %}
+
+        <div class="map-overlay-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ submissions|length }} Insiden <span>terdeteksi</span>
+        </div>
+
+        <div style="position:absolute; bottom:12px; right:12px; background:white; border-radius:var(--radius-sm); padding:10px 14px; box-shadow:var(--shadow-sm); font-size:0.73rem; display:flex; flex-direction:column; gap:5px;">
+            <div style="font-weight:700; margin-bottom:3px; color:var(--text-dark);">Legenda</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#16a34a;border-radius:50%;display:inline-block;"></span> Resolved</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#2563eb;border-radius:50%;display:inline-block;"></span> In Progress</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#d97706;border-radius:50%;display:inline-block;"></span> Pending</div>
+        </div>
+    </div>
+
+    <!-- Incident List -->
+    <div class="card" style="padding:18px;">
+        <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:14px;">Daftar Insiden</h3>
+        <div class="incident-list">
+            {% for s in submissions %}
+            <div class="incident-item">
+                <div class="incident-title">{{ s.title|truncatechars:45 }}</div>
+                {% if s.location_address %}
+                <div class="incident-loc">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ s.location_address|truncatechars:35 }}
+                </div>
+                {% endif %}
+                <div class="incident-footer">
+                    {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
+                    {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
+                    {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
+                    {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                    <span class="incident-date">{{ s.created_at|date:"d M Y" }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.85rem;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:10px; opacity:0.4;"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <p>Belum ada insiden terdaftar.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

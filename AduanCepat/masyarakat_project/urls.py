@@ -6,5 +6,6 @@ urlpatterns = [
     path('', akun_views.home_view, name='home'),
     path('admin/', admin.site.urls),
     path('akun/', include('akun.urls')),
+    path('user/', include('user.urls')),
     path('accounts/', include('allauth.urls')),  # Google OAuth routes
 ]

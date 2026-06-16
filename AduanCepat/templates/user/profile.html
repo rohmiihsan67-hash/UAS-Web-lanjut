@@ -1,0 +1,375 @@
+{% extends 'user/base_user.html' %}
+{% block title %}Profile{% endblock %}
+{% block meta_desc %}Kelola informasi profil akun AduanCepat Anda.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+    @media (max-width: 960px) { .profile-layout { grid-template-columns: 1fr; } }
+
+    /* Left: profile card */
+    .profile-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px 22px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+    .avatar-wrap {
+        position: relative;
+        width: 90px;
+        height: 90px;
+    }
+    .avatar-circle {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+    .avatar-verified {
+        position: absolute;
+        bottom: 3px;
+        right: 3px;
+        width: 20px;
+        height: 20px;
+        background: #16a34a;
+        border-radius: 50%;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .avatar-verified svg { width: 10px; height: 10px; color: white; }
+
+    .profile-name {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1.2;
+    }
+    .profile-verified-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #16a34a;
+    }
+    .profile-verified-text svg { width: 12px; height: 12px; }
+    .profile-location {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .profile-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .profile-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+    }
+    .profile-stat-mini {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+    }
+    .profile-stat-mini-value { font-size: 1.3rem; font-weight: 800; color: var(--text-dark); line-height: 1; }
+    .profile-stat-mini-value.green  { color: #16a34a; }
+    .profile-stat-mini-value.orange { color: #d97706; }
+    .profile-stat-mini-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-muted); }
+
+    .trust-mini {
+        width: 100%;
+        background: linear-gradient(135deg, var(--green-dark), var(--green-mid));
+        border-radius: 10px;
+        padding: 16px;
+        color: white;
+        text-align: left;
+        margin-top: 4px;
+    }
+    .trust-mini-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 4px; }
+    .trust-mini-score { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .trust-mini-bar { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 8px 0 4px; overflow: hidden; }
+    .trust-mini-fill { height: 100%; background: #6abf69; border-radius: 2px; }
+    .trust-mini-note { font-size: 0.7rem; opacity: 0.6; }
+
+    /* Right: form */
+    .profile-form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+    }
+    .form-card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .privacy-link {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .privacy-link:hover { color: var(--green-dark); }
+    .privacy-link svg { width: 13px; height: 13px; }
+
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .form-grid-2 { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+    .form-control {
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-dark);
+        background: var(--bg);
+        outline: none;
+        transition: all 0.15s;
+        width: 100%;
+    }
+    .form-control:focus { border-color: var(--green-dark); background: var(--white); box-shadow: 0 0 0 3px rgba(26,60,26,0.07); }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+    .form-control[readonly] { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
+
+    .form-footer { display: flex; justify-content: flex-end; margin-top: 4px; }
+
+    /* Recent Activity */
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .activity-title { font-size: 1rem; font-weight: 700; }
+    .view-history-link { font-size: 0.78rem; font-weight: 600; color: var(--green-dark); text-decoration: none; }
+    .view-history-link:hover { text-decoration: underline; }
+
+    .activity-list { display: flex; flex-direction: column; gap: 0; }
+    .activity-item {
+        display: flex;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(26,60,26,0.06);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon-wrap {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .activity-icon-wrap svg { width: 16px; height: 16px; }
+    .activity-icon-wrap.green  { background: #dcfce7; color: #16a34a; }
+    .activity-icon-wrap.blue   { background: #dbeafe; color: #2563eb; }
+    .activity-icon-wrap.gray   { background: var(--bg); color: var(--text-muted); }
+    .activity-content { flex: 1; }
+    .activity-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .activity-event { font-size: 0.85rem; font-weight: 700; color: var(--text-dark); }
+    .activity-date { font-size: 0.73rem; color: var(--text-muted); white-space: nowrap; }
+    .activity-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
+    <div>
+        <h1 class="page-title">Profile</h1>
+        <p class="page-subtitle">Kelola informasi pribadi dan preferensi akun Anda.</p>
+    </div>
+</div>
+
+<div class="profile-layout">
+    <!-- Left: Profile Card -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="profile-card">
+            <div class="avatar-wrap">
+                <div class="avatar-circle">{{ request.user.username|first|upper }}</div>
+                {% if profile.is_verified %}
+                <div class="avatar-verified">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <div class="profile-name">{{ profile.full_name|default:request.user.get_full_name|default:request.user.username }}</div>
+                {% if profile.is_verified %}
+                <div class="profile-verified-text">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Verified Citizen
+                </div>
+                {% endif %}
+                {% if profile.home_address %}
+                <div class="profile-location" style="margin-top:4px;">📍 {{ profile.home_address|truncatechars:40 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="profile-actions">
+                <button type="button" onclick="document.getElementById('profile-form').scrollIntoView({behavior:'smooth'})" class="btn btn-primary" style="justify-content:center; font-size:0.82rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Update Profile
+                </button>
+                <a href="#" class="btn btn-outline" style="justify-content:center; font-size:0.82rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    View Public Profile
+                </a>
+            </div>
+
+            <div class="profile-stats-grid">
+                <div class="profile-stat-mini">
+                    <div class="profile-stat-mini-value">{{ total }}</div>
+                    <div class="profile-stat-mini-label">Total Reports</div>
+                </div>
+                <div class="profile-stat-mini">
+                    <div class="profile-stat-mini-value green">{{ resolved }}</div>
+                    <div class="profile-stat-mini-label">Resolved</div>
+                </div>
+                <div class="profile-stat-mini">
+                    <div class="profile-stat-mini-value orange">{{ pending_action }}</div>
+                    <div class="profile-stat-mini-label">Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="trust-mini">
+            <div class="trust-mini-label">Community Trust Score</div>
+            <div class="trust-mini-score">{{ profile.trust_score }}</div>
+            <div class="trust-mini-bar">
+                <div class="trust-mini-fill" style="width:{{ profile.trust_score }}%;"></div>
+            </div>
+            <div class="trust-mini-note">Based on report accuracy and contribution history.</div>
+        </div>
+    </div>
+
+    <!-- Right: Form + Activity -->
+    <div class="profile-form-section">
+        <!-- Personal Details -->
+        <div class="form-card" id="profile-form">
+            <div class="form-card-title">
+                Personal Details
+                <a href="{% url 'user_settings' %}" class="privacy-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    Privacy Settings
+                </a>
+            </div>
+            <form method="post" action="{% url 'user_profile' %}">
+                {% csrf_token %}
+                <div class="form-grid-2" style="margin-bottom:14px;">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ profile.full_name|default:request.user.get_full_name }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" class="form-control" value="{{ request.user.email }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" name="phone" class="form-control" value="{{ profile.phone }}" placeholder="+62 812-xxxx-xxxx">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Occupation</label>
+                        <input type="text" name="occupation" class="form-control" value="{{ profile.occupation }}" placeholder="e.g. Civil Engineer">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label">Home Address</label>
+                    <textarea name="home_address" class="form-control" placeholder="Masukkan alamat lengkap Anda...">{{ profile.home_address }}</textarea>
+                </div>
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="form-card">
+            <div class="activity-header">
+                <h2 class="activity-title">Recent Activity</h2>
+                <a href="{% url 'user_my_submissions' %}" class="view-history-link">View All History</a>
+            </div>
+            <div class="activity-list">
+                {% for s in recent_activity %}
+                <div class="activity-item">
+                    <div class="activity-icon-wrap {% if s.status == 'resolved' %}green{% elif s.status == 'in_progress' %}blue{% else %}gray{% endif %}">
+                        {% if s.status == 'resolved' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        {% elif s.status == 'in_progress' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                        {% else %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        {% endif %}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-head">
+                            <div class="activity-event">
+                                {% if s.status == 'resolved' %}Report #{{ s.pk }} Resolved
+                                {% elif s.status == 'in_progress' %}Report #{{ s.pk }} In Progress
+                                {% else %}New Report Filed{% endif %}
+                            </div>
+                            <div class="activity-date">{{ s.updated_at|date:"M d" }}</div>
+                        </div>
+                        <div class="activity-desc">{{ s.title|truncatechars:80 }}</div>
+                        {% if s.status == 'in_progress' %}<span class="badge badge-progress" style="margin-top:5px;">IN PROGRESS</span>
+                        {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub" style="margin-top:5px;">PENDING PUBLICATION</span>{% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p style="font-size:0.83rem; color:var(--text-muted); text-align:center; padding:24px 0;">Belum ada aktivitas terbaru.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

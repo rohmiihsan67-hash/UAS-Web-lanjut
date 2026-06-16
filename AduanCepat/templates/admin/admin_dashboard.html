@@ -1844,12 +1844,7 @@
         <header class="topbar">
             <div style="display: flex; align-items: center; height: 100%;">
                 <h1 class="topbar-title" id="page-title">Dashboard</h1>
-                <div class="topbar-tabs">
-                    <a href="#" class="topbar-tab-link active">Overview</a>
-                    <a href="#" class="topbar-tab-link">Incident Map</a>
-                    <a href="#" class="topbar-tab-link">Public Feed</a>
-                    <a href="#" class="topbar-tab-link">My Submissions</a>
-                </div>
+
             </div>
             <div class="topbar-right">
                 <div class="search-box">
@@ -1897,42 +1892,42 @@
                 
                 <!-- Sub Tab 1: Overview -->
                 <div id="overview-subtab" class="subtab-pane active">
-                    {% include 'akun/dashboard_tabs/overview.html' %}
+                    {% include 'admin/dashboard_tabs/overview.html' %}
                 </div>
 
                 <!-- Sub Tab 2: Incident Map -->
                 <div id="incident-map-subtab" class="subtab-pane">
-                    {% include 'akun/dashboard_tabs/incident_map.html' %}
+                    {% include 'admin/dashboard_tabs/incident_map.html' %}
                 </div>
 
                 <!-- Sub Tab 3: Public Feed -->
                 <div id="public-feed-subtab" class="subtab-pane">
-                    {% include 'akun/dashboard_tabs/public_feed.html' %}
+                    {% include 'admin/dashboard_tabs/public_feed.html' %}
                 </div>
 
                 <!-- Sub Tab 4: My Submissions -->
                 <div id="my-submissions-subtab" class="subtab-pane">
-                    {% include 'akun/dashboard_tabs/my_submissions.html' %}
+                    {% include 'admin/dashboard_tabs/my_submissions.html' %}
                 </div>
 
             </div> <!-- /#dashboard-tab -->
 
             <!-- ═══════ TAB 2: PROFILE ═══════ -->
             <div id="profile-tab" class="tab-pane">
-                {% include 'akun/dashboard_tabs/profile.html' %}
+                {% include 'admin/dashboard_tabs/profile.html' %}
             </div>
 
             <!-- Other Tabs (Placeholders) -->
             <div id="reports-tab" class="tab-pane">
-                {% include 'akun/dashboard_tabs/reports.html' %}
+                {% include 'admin/dashboard_tabs/reports.html' %}
             </div>
 
             <div id="settings-tab" class="tab-pane">
-                {% include 'akun/dashboard_tabs/settings.html' %}
+                {% include 'admin/dashboard_tabs/settings.html' %}
             </div>
 
             <div id="security-tab" class="tab-pane">
-                {% include 'akun/dashboard_tabs/security.html' %}
+                {% include 'admin/dashboard_tabs/security.html' %}
             </div>
 
         </div><!-- /.content -->

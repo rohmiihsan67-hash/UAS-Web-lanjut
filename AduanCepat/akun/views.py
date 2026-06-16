@@ -44,7 +44,7 @@ def admin_dashboard_view(request):
         'actions': [],  # Data tindakan administratif kosong
         'user_count': user_count,
     }
-    return render(request, 'akun/admin_dashboard.html', context)
+    return render(request, 'admin/admin_dashboard.html', context)
 
 
 def register_view(request):

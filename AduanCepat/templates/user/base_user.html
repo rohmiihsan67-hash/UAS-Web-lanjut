@@ -1,0 +1,668 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AduanCepat{% endblock %} - Community Portal</title>
+    <meta name="description" content="{% block meta_desc %}Platform resmi pengaduan warga AduanCepat.{% endblock %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --green-dark: #1a3c1a;
+            --green-mid: #2d6a2d;
+            --green-light: #4caf50;
+            --green-pale: #f0f4ea;
+            --green-accent: #5a9e5a;
+            --green-hover: #e8f0e8;
+            --text-dark: #111827;
+            --text-mid: #374151;
+            --text-muted: #6b7280;
+            --bg: #f5f7f2;
+            --white: #ffffff;
+            --border: rgba(26,60,26,0.10);
+            --sidebar-w: 220px;
+            --topbar-h: 56px;
+            --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* ═══════════════════════════
+           SIDEBAR
+        ═══════════════════════════ */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 20px 18px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-brand-name {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--green-dark);
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--green-dark);
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-icon svg {
+            width: 14px;
+            height: 14px;
+            fill: white;
+        }
+
+        .sidebar-portal-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 3px;
+            padding-left: 2px;
+        }
+
+        .sidebar-nav {
+            padding: 14px 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-section-label {
+            font-size: 0.63rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 10px 8px 4px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.84rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .sidebar-link:hover {
+            background: var(--green-hover);
+            color: var(--green-dark);
+        }
+
+        .sidebar-link.active {
+            background: var(--green-pale);
+            color: var(--green-dark);
+            font-weight: 600;
+        }
+
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            background: var(--green-dark);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .sidebar-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .sidebar-link.active .sidebar-icon,
+        .sidebar-link:hover .sidebar-icon {
+            opacity: 1;
+        }
+
+        .sidebar-bottom {
+            padding: 10px 10px 14px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .btn-new-report {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 14px;
+            background: var(--green-dark);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.83rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+            margin-bottom: 6px;
+        }
+
+        .btn-new-report:hover {
+            background: var(--green-mid);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26,60,26,0.25);
+        }
+
+        .btn-new-report svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .sidebar-bottom-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .sidebar-bottom-link:hover {
+            background: var(--green-hover);
+            color: var(--text-dark);
+        }
+
+        .sidebar-bottom-link.logout {
+            color: #dc2626;
+        }
+
+        .sidebar-bottom-link.logout:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .sidebar-bottom-link svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+        }
+
+        /* ═══════════════════════════
+           TOPBAR
+        ═══════════════════════════ */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-w);
+            right: 0;
+            height: var(--topbar-h);
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            z-index: 90;
+            gap: 16px;
+        }
+
+        .topbar-tabs {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .topbar-tab {
+            padding: 7px 14px;
+            font-size: 0.83rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.15s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .topbar-tab:hover {
+            color: var(--text-dark);
+        }
+
+        .topbar-tab.active {
+            color: var(--green-dark);
+            font-weight: 600;
+            border-bottom-color: var(--green-dark);
+        }
+
+        .topbar-search {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .topbar-search input {
+            padding: 7px 12px 7px 34px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            background: var(--bg);
+            width: 200px;
+            transition: all 0.15s;
+            outline: none;
+        }
+
+        .topbar-search input:focus {
+            border-color: var(--green-dark);
+            background: var(--white);
+            width: 240px;
+        }
+
+        .topbar-search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: var(--text-muted);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .topbar-icon-btn:hover {
+            background: var(--green-hover);
+            color: var(--green-dark);
+        }
+
+        .topbar-icon-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: 6px;
+            right: 7px;
+            width: 7px;
+            height: 7px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 1.5px solid var(--white);
+        }
+
+        .topbar-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--green-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* ═══════════════════════════
+           MAIN CONTENT
+        ═══════════════════════════ */
+        .main-content {
+            margin-left: var(--sidebar-w);
+            margin-top: var(--topbar-h);
+            flex: 1;
+            padding: 28px 32px;
+            min-height: calc(100vh - var(--topbar-h));
+        }
+
+        /* ═══════════════════════════
+           MESSAGES
+        ═══════════════════════════ */
+        .messages-list {
+            margin-bottom: 18px;
+        }
+
+        .message-alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-alert.success { background: #dcfce7; color: #166534; }
+        .message-alert.error   { background: #fee2e2; color: #991b1b; }
+        .message-alert.info    { background: #dbeafe; color: #1e40af; }
+        .message-alert.warning { background: #fef3c7; color: #92400e; }
+
+        /* ═══════════════════════════
+           SHARED CARDS
+        ═══════════════════════════ */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+        }
+
+        .card-sm {
+            padding: 16px 18px;
+        }
+
+        /* STATUS BADGES */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px;
+            border-radius: 99px;
+            font-size: 0.71rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .badge-resolved  { background: #dcfce7; color: #166534; }
+        .badge-progress  { background: #dbeafe; color: #1e40af; }
+        .badge-pending   { background: #fef3c7; color: #92400e; }
+        .badge-pendpub   { background: #ede9fe; color: #5b21b6; }
+
+        /* STAT TILES */
+        .stat-tiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat-tile {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+        }
+
+        .stat-tile-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-tile-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1;
+        }
+
+        .stat-tile-value.green  { color: var(--green-dark); }
+        .stat-tile-value.orange { color: #d97706; }
+        .stat-tile-value.blue   { color: #2563eb; }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 0.84rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--green-dark);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--green-mid);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26,60,26,0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--green-dark);
+            border: 1.5px solid rgba(26,60,26,0.3);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--green-dark);
+            background: var(--green-hover);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            padding: 7px 14px;
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg);
+            color: var(--text-dark);
+        }
+
+        .btn svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .topbar  { left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-name">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            AduanCepat
+        </div>
+        <div class="sidebar-portal-label">Community Portal</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <span class="nav-section-label">Menu</span>
+
+        <a href="{% url 'user_overview' %}" class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Overview
+        </a>
+
+        <a href="{% url 'user_incident_map' %}" class="sidebar-link {% if active_page == 'incident_map' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            Incident Map
+        </a>
+
+        <a href="{% url 'user_public_feed' %}" class="sidebar-link {% if active_page == 'public_feed' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            Public Feed
+        </a>
+
+        <a href="{% url 'user_my_submissions' %}" class="sidebar-link {% if active_page == 'my_submissions' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+            My Submissions
+        </a>
+
+        <span class="nav-section-label" style="margin-top:8px;">Account</span>
+
+        <a href="{% url 'user_profile' %}" class="sidebar-link {% if active_page == 'profile' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            Profile
+        </a>
+
+        <a href="{% url 'user_settings' %}" class="sidebar-link {% if active_page == 'settings' %}active{% endif %}">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            Settings
+        </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <a href="{% url 'user_new_report' %}" class="btn-new-report">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Report
+        </a>
+        <a href="#" class="sidebar-bottom-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Help Center
+        </a>
+        <a href="{% url 'logout' %}" class="sidebar-bottom-link logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+        </a>
+    </div>
+</aside>
+
+<!-- ═══ TOPBAR ═══ -->
+<header class="topbar">
+
+
+    <div class="topbar-search">
+        <svg class="topbar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="topbar-search-input" placeholder="Search reports...">
+    </div>
+
+    <div class="topbar-actions">
+        <button class="topbar-icon-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span class="notif-dot"></span>
+        </button>
+        <button class="topbar-icon-btn" title="Settings" onclick="window.location='{% url 'user_settings' %}'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+        <a href="{% url 'user_profile' %}" class="topbar-avatar" title="{{ request.user.username }}">
+            {{ request.user.username|first|upper }}
+        </a>
+    </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main-content">
+    {% if messages %}
+    <div class="messages-list">
+        {% for message in messages %}
+        <div class="message-alert {{ message.tags }}">
+            {% if message.tags == 'success' %}✓{% elif message.tags == 'error' %}✕{% else %}ℹ{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

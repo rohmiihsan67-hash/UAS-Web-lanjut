@@ -1,0 +1,411 @@
+{% extends 'user/base_user.html' %}
+{% block title %}My Submissions{% endblock %}
+{% block meta_desc %}Kelola dan pantau semua laporan yang telah Anda kirimkan.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .subs-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .subs-search {
+        position: relative;
+        flex-shrink: 0;
+    }
+    .subs-search input {
+        padding: 8px 12px 8px 34px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.82rem;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-dark);
+        background: var(--white);
+        width: 220px;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+    .subs-search input:focus { border-color: var(--green-dark); }
+    .subs-search svg {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 13px;
+        height: 13px;
+        color: var(--text-muted);
+    }
+
+    .subs-stat-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .subs-stat-strip { grid-template-columns: repeat(2, 1fr); } }
+
+    .subs-stat {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        text-align: center;
+    }
+    .subs-stat-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+    .subs-stat-value {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        line-height: 1;
+    }
+    .subs-stat-value.green  { color: #16a34a; }
+    .subs-stat-value.blue   { color: #2563eb; }
+    .subs-stat-value.orange { color: #d97706; }
+
+    .subs-highlight {
+        background: var(--green-dark);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        color: white;
+        margin-bottom: 20px;
+    }
+    .subs-highlight-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 8px; }
+    .subs-highlight-text { font-size: 1rem; font-weight: 700; line-height: 1.4; }
+
+    .subs-table-wrap {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+    .subs-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .subs-table thead {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+    .subs-table th {
+        padding: 11px 16px;
+        text-align: left;
+        font-size: 0.71rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    .subs-table td {
+        padding: 14px 16px;
+        font-size: 0.83rem;
+        color: var(--text-mid);
+        border-bottom: 1px solid rgba(26,60,26,0.05);
+        vertical-align: middle;
+    }
+    .subs-table tr:last-child td { border-bottom: none; }
+    .subs-table tbody tr:hover td { background: var(--bg); }
+    .td-report-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--green-pale);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--green-dark);
+    }
+    .td-report-img svg { width: 18px; height: 18px; }
+    .td-title-cell { display: flex; align-items: center; gap: 12px; }
+    .td-title-name { font-weight: 700; color: var(--text-dark); font-size: 0.85rem; }
+    .td-title-loc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 3px; }
+    .td-title-loc svg { width: 11px; height: 11px; }
+
+    .action-link {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--green-dark);
+        text-decoration: none;
+        white-space: nowrap;
+        transition: opacity 0.15s;
+    }
+    .action-link:hover { opacity: 0.7; text-decoration: underline; }
+
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-top: 1px solid var(--border);
+        background: var(--bg);
+    }
+    .table-footer-info { font-size: 0.78rem; color: var(--text-muted); }
+    .pagination { display: flex; gap: 6px; }
+    .page-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .page-btn:hover, .page-btn.active {
+        border-color: var(--green-dark);
+        color: var(--green-dark);
+        background: var(--green-pale);
+    }
+    .page-btn svg { width: 13px; height: 13px; }
+
+    .history-section { margin-top: 28px; }
+    .history-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .history-list { display: flex; flex-direction: column; gap: 0; }
+    .history-item {
+        display: flex;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 5px;
+    }
+    .history-dot.green  { background: #16a34a; }
+    .history-dot.blue   { background: #2563eb; }
+    .history-dot.gray   { background: #9ca3af; }
+    .history-content { flex: 1; }
+    .history-time { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .history-text { font-size: 0.83rem; color: var(--text-dark); font-weight: 500; line-height: 1.4; }
+    .history-sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+    .resolution-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 22px;
+        text-align: center;
+    }
+    .resolution-rate {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--green-dark);
+        line-height: 1;
+        margin: 8px 0 6px;
+    }
+    .resolution-bar-bg {
+        height: 6px;
+        background: var(--bg);
+        border-radius: 3px;
+        margin: 12px 0 8px;
+        overflow: hidden;
+    }
+    .resolution-bar-fill {
+        height: 100%;
+        background: var(--green-dark);
+        border-radius: 3px;
+    }
+    .resolution-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="subs-header-row">
+    <div>
+        <h1 class="page-title">My Submissions</h1>
+        <p class="page-subtitle">Lihat dan pantau perkembangan laporan yang telah Anda kirimkan.</p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <div class="subs-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="subs-search-input" placeholder="Search reports...">
+        </div>
+        <button class="btn btn-outline" style="white-space:nowrap; font-size:0.8rem; padding:8px 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
+            Filter
+        </button>
+    </div>
+</div>
+
+<!-- Stats Strip -->
+<div class="subs-stat-strip">
+    <div class="subs-stat">
+        <div class="subs-stat-label">Total Filed</div>
+        <div class="subs-stat-value">{{ total }}</div>
+    </div>
+    <div class="subs-stat">
+        <div class="subs-stat-label">In Progress</div>
+        <div class="subs-stat-value blue">{{ in_progress }}</div>
+    </div>
+    <div class="subs-stat">
+        <div class="subs-stat-label">Resolved</div>
+        <div class="subs-stat-value green">{{ resolved }}</div>
+    </div>
+    <div class="subs-stat">
+        <div class="subs-stat-label">Pending</div>
+        <div class="subs-stat-value orange">{{ pending }}</div>
+    </div>
+</div>
+
+<!-- Current Focus Highlight -->
+{% if submissions %}
+{% with latest=submissions.first %}
+<div class="subs-highlight">
+    <div class="subs-highlight-label">🔔 Current Focus</div>
+    <div class="subs-highlight-text">Laporan terbaru Anda "<strong>{{ latest.title|truncatechars:50 }}</strong>" sedang dalam proses verifikasi.</div>
+</div>
+{% endwith %}
+{% endif %}
+
+<div style="display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start;">
+    <!-- Table -->
+    <div>
+        <div class="subs-table-wrap">
+            <table class="subs-table">
+                <thead>
+                    <tr>
+                        <th>Incident Details</th>
+                        <th>Date Submitted</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="subs-tbody">
+                    {% for s in submissions %}
+                    <tr class="subs-row" data-title="{{ s.title|lower }}">
+                        <td>
+                            <div class="td-title-cell">
+                                <div class="td-report-img">
+                                    {% if s.category == 'infrastructure' %}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                                    {% elif s.category == 'environment' %}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 19.11a1 1 0 001.61 1.18C7 18.5 9.5 14 17 8z"/></svg>
+                                    {% else %}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="td-title-name">{{ s.title|truncatechars:40 }}</div>
+                                    {% if s.location_address %}
+                                    <div class="td-title-loc">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        {{ s.location_address|truncatechars:35 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="white-space:nowrap; font-size:0.8rem;">{{ s.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
+                            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In-Progress</span>
+                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
+                            {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                        </td>
+                        <td><a href="#" class="action-link">View Details</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">
+                            <div style="margin-bottom:12px;">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            </div>
+                            Belum ada laporan. <a href="{% url 'user_new_report' %}" style="color:var(--green-dark); font-weight:600;">Buat laporan pertama Anda!</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if submissions %}
+            <div class="table-footer">
+                <div class="table-footer-info">Showing {{ submissions|length }} of {{ total }} submissions</div>
+                <div class="pagination">
+                    <button class="page-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Status History -->
+        <div class="history-section">
+            <h2 class="history-title">Recent Status History</h2>
+            <div class="card" style="padding:20px 22px;">
+                <div class="history-list">
+                    {% for s in submissions|slice:":3" %}
+                    <div class="history-item">
+                        <div class="history-dot {% if s.status == 'resolved' %}green{% elif s.status == 'in_progress' %}blue{% else %}gray{% endif %}"></div>
+                        <div class="history-content">
+                            <div class="history-time">{{ s.updated_at|date:"d M Y • H:i" }}</div>
+                            <div class="history-text">
+                                {% if s.status == 'resolved' %}Laporan Diselesaikan
+                                {% elif s.status == 'in_progress' %}Laporan Sedang Diproses
+                                {% else %}Laporan Dikirim — Menunggu Tindakan{% endif %}
+                            </div>
+                            <div class="history-sub">{{ s.title|truncatechars:60 }}</div>
+                            {% if s.status == 'in_progress' %}<span class="badge badge-progress" style="margin-top:5px;">IN PROGRESS</span>
+                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub" style="margin-top:5px;">PENDING PUBLICATION</span>{% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="font-size:0.83rem; color:var(--text-muted); text-align:center; padding:20px 0;">Belum ada riwayat aktivitas.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Resolution Rate -->
+    <div>
+        <div class="resolution-card">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Resolution Rate</div>
+            <div class="resolution-rate">
+                {% if total > 0 %}{% widthratio resolved total 100 %}%{% else %}0%{% endif %}
+            </div>
+            <div class="resolution-bar-bg">
+                <div class="resolution-bar-fill" style="width:{% if total > 0 %}{% widthratio resolved total 100 %}{% else %}0{% endif %}%;"></div>
+            </div>
+            <div class="resolution-note">Laporan Anda diselesaikan lebih cepat dari rata-rata komunitas. Terus berkontribusi!</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const searchInput = document.getElementById('subs-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.subs-row').forEach(row => {
+                row.style.display = row.dataset.title.includes(q) ? '' : 'none';
+            });
+        });
+    }
+</script>
+{% endblock %}

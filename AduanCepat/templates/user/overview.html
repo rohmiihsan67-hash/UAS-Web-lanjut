@@ -1,0 +1,281 @@
+{% extends 'user/base_user.html' %}
+{% block title %}Overview{% endblock %}
+{% block meta_desc %}Ringkasan aktivitas laporan Anda di AduanCepat.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .overview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 24px;
+    }
+    @media (max-width: 1100px) { .overview-grid { grid-template-columns: 1fr; } }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--green-dark) 0%, #2d6a2d 100%);
+        border-radius: var(--radius);
+        padding: 28px 32px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .welcome-banner::after {
+        content: '';
+        position: absolute;
+        right: -40px; top: -40px;
+        width: 200px; height: 200px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+    }
+    .welcome-banner::before {
+        content: '';
+        position: absolute;
+        right: 60px; bottom: -60px;
+        width: 150px; height: 150px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+    }
+    .welcome-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        position: relative;
+        z-index: 1;
+    }
+    .welcome-sub {
+        font-size: 0.85rem;
+        opacity: 0.75;
+        position: relative;
+        z-index: 1;
+    }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    @media (max-width: 700px) { .quick-stats { grid-template-columns: 1fr 1fr; } }
+
+    .quick-stat {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .quick-stat-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+    }
+    .quick-stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--text-dark);
+    }
+    .quick-stat-value.green  { color: #16a34a; }
+    .quick-stat-value.orange { color: #d97706; }
+    .quick-stat-value.blue   { color: #2563eb; }
+    .quick-stat-tag {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .quick-stat-tag.resolved  { color: #16a34a; }
+    .quick-stat-tag.progress  { color: #2563eb; }
+    .quick-stat-tag.pending   { color: #d97706; }
+
+    .recent-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .recent-table th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        padding: 0 12px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+    .recent-table td {
+        padding: 13px 12px;
+        font-size: 0.83rem;
+        color: var(--text-mid);
+        border-bottom: 1px solid rgba(26,60,26,0.05);
+        vertical-align: middle;
+    }
+    .recent-table tr:last-child td { border-bottom: none; }
+    .recent-table tr:hover td { background: var(--bg); }
+    .td-title { font-weight: 600; color: var(--text-dark); }
+    .td-loc {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+    .td-loc svg { width: 12px; height: 12px; }
+
+    .trust-card {
+        background: linear-gradient(135deg, #1a3c1a 0%, #2d6a2d 100%);
+        border-radius: var(--radius);
+        padding: 22px;
+        color: white;
+    }
+    .trust-score {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+        margin: 8px 0 4px;
+    }
+    .trust-bar-bg {
+        height: 6px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 3px;
+        margin: 12px 0 8px;
+        overflow: hidden;
+    }
+    .trust-bar-fill {
+        height: 100%;
+        background: #6abf69;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+    }
+    .trust-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+    .trust-max {
+        font-size: 0.75rem;
+        opacity: 0.5;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+    .empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 0.85rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Overview</h1>
+    <p class="page-subtitle">Selamat datang kembali, {{ request.user.get_full_name|default:request.user.username }}. Pantau aktivitas laporan Anda.</p>
+</div>
+
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+    <div class="welcome-title">Halo, {{ request.user.get_full_name|default:request.user.username }}! 👋</div>
+    <div class="welcome-sub">Anda telah berkontribusi untuk membuat komunitas lebih baik melalui laporan Anda.</div>
+</div>
+
+<!-- Quick Stats -->
+<div class="quick-stats">
+    <div class="quick-stat">
+        <span class="quick-stat-label">Total Laporan</span>
+        <span class="quick-stat-value">{{ total }}</span>
+        <span class="quick-stat-tag" style="color: var(--text-muted);">semua laporan</span>
+    </div>
+    <div class="quick-stat">
+        <span class="quick-stat-label">Resolved</span>
+        <span class="quick-stat-value green">{{ resolved }}</span>
+        <span class="quick-stat-tag resolved">✓ selesai ditangani</span>
+    </div>
+    <div class="quick-stat">
+        <span class="quick-stat-label">Pending Action</span>
+        <span class="quick-stat-value orange">{{ in_progress }}</span>
+        <span class="quick-stat-tag progress">⟳ sedang diproses</span>
+    </div>
+</div>
+
+<div class="overview-grid">
+    <!-- Recent Submissions -->
+    <div class="card" style="grid-column: 1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h2 style="font-size:1rem; font-weight:700;">Laporan Terbaru</h2>
+            <a href="{% url 'user_my_submissions' %}" class="btn btn-ghost" style="font-size:0.78rem; padding:5px 10px;">Lihat Semua →</a>
+        </div>
+        {% if recent_submissions %}
+        <table class="recent-table">
+            <thead>
+                <tr>
+                    <th>Judul</th>
+                    <th>Status</th>
+                    <th>Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in recent_submissions %}
+                <tr>
+                    <td>
+                        <div class="td-title">{{ s.title|truncatechars:40 }}</div>
+                        {% if s.location_address %}
+                        <div class="td-loc">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            {{ s.location_address|truncatechars:30 }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
+                        {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
+                        {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
+                        {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                    </td>
+                    <td style="font-size:0.78rem; white-space:nowrap;">{{ s.created_at|date:"d M Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p>Belum ada laporan. <a href="{% url 'user_new_report' %}" style="color:var(--green-dark); font-weight:600;">Buat laporan pertama</a></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Trust Score -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="trust-card">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7;">Community Trust Score</div>
+            <div class="trust-score">{{ profile.trust_score }}</div>
+            <div class="trust-max">/ 100</div>
+            <div class="trust-bar-bg">
+                <div class="trust-bar-fill" style="width:{{ profile.trust_score }}%;"></div>
+            </div>
+            <div class="trust-label">Berdasarkan akurasi laporan dan riwayat kontribusi Anda.</div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size:0.88rem; font-weight:700; margin-bottom:14px;">Aksi Cepat</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <a href="{% url 'user_new_report' %}" class="btn btn-primary" style="justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Buat Laporan Baru
+                </a>
+                <a href="{% url 'user_my_submissions' %}" class="btn btn-outline" style="justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Lihat Submissions
+                </a>
+                <a href="{% url 'user_public_feed' %}" class="btn btn-ghost" style="justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Community Feed
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

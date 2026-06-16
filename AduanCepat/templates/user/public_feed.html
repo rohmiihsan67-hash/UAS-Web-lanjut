@@ -1,0 +1,303 @@
+{% extends 'user/base_user.html' %}
+{% block title %}Public Feed{% endblock %}
+{% block meta_desc %}Community feed laporan warga AduanCepat dari seluruh wilayah.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .feed-header-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    @media (max-width: 700px) { .feed-header-stats { grid-template-columns: 1fr 1fr; } }
+
+    .feed-stat-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+    }
+    .feed-stat-card.dark {
+        background: var(--green-dark);
+        color: white;
+        border-color: transparent;
+    }
+    .feed-stat-title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
+    .feed-stat-card.dark .feed-stat-title { color: rgba(255,255,255,0.6); }
+    .feed-stat-value { font-size: 2rem; font-weight: 800; color: var(--text-dark); line-height: 1; }
+    .feed-stat-card.dark .feed-stat-value { color: white; }
+    .feed-stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .feed-stat-card.dark .feed-stat-sub { color: rgba(255,255,255,0.5); }
+    .feed-stat-trend { font-size: 0.75rem; font-weight: 600; color: #16a34a; margin-top: 4px; }
+
+    .feed-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .feed-sort-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--green-dark);
+        background: var(--green-pale);
+        border: 1px solid rgba(26,60,26,0.15);
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+    .feed-sort-btn:hover { background: var(--green-hover); }
+    .feed-sort-btn svg { width: 14px; height: 14px; }
+
+    .feed-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    @media (max-width: 860px) { .feed-grid { grid-template-columns: 1fr; } }
+
+    .feed-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .feed-card:hover {
+        border-color: rgba(26,60,26,0.2);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    .feed-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .feed-card-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: var(--green-pale);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--green-dark);
+    }
+    .feed-card-icon svg { width: 20px; height: 20px; }
+    .feed-card-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.35;
+        flex: 1;
+    }
+    .feed-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .feed-card-loc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .feed-card-loc svg { width: 11px; height: 11px; }
+    .feed-card-time { font-size: 0.73rem; color: var(--text-muted); }
+    .feed-card-desc {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+    .feed-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+    }
+    .feed-card-actions {
+        display: flex;
+        gap: 12px;
+    }
+    .feed-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.15s;
+        background: none;
+        border: none;
+    }
+    .feed-action-btn:hover { color: var(--green-dark); }
+    .feed-action-btn svg { width: 13px; height: 13px; }
+
+    .feed-verified-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #16a34a;
+    }
+    .feed-verified-badge svg { width: 12px; height: 12px; }
+
+    .load-more-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 13px 28px;
+        background: var(--white);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-mid);
+        cursor: pointer;
+        width: 100%;
+        margin-top: 20px;
+        transition: all 0.15s;
+        font-family: 'Inter', sans-serif;
+    }
+    .load-more-btn:hover {
+        border-color: var(--green-dark);
+        color: var(--green-dark);
+        background: var(--green-pale);
+    }
+    .load-more-btn svg { width: 15px; height: 15px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1 class="page-title">Community Feed</h1>
+        <p class="page-subtitle">Pantau laporan dari seluruh komunitas di lingkungan Anda.</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <button class="feed-sort-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
+            Filter
+        </button>
+        <button class="feed-sort-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/></svg>
+            Latest First
+        </button>
+    </div>
+</div>
+
+<!-- Header Stats -->
+<div class="feed-header-stats">
+    <div class="feed-stat-card">
+        <div class="feed-stat-title">Reports Resolved</div>
+        <div class="feed-stat-value">{{ resolved_count }}</div>
+        <div class="feed-stat-trend">↑ Berkontribusi bulan ini</div>
+    </div>
+    <div class="feed-stat-card dark">
+        <div class="feed-stat-title">Active Now</div>
+        <div class="feed-stat-value">{{ in_progress_count }}</div>
+        <div class="feed-stat-sub">Reports being investigated by authorities</div>
+    </div>
+    <div class="feed-stat-card">
+        <div class="feed-stat-title">Avg Response</div>
+        <div class="feed-stat-value">4.2h</div>
+        <div class="feed-stat-sub">Waktu rata-rata respons</div>
+    </div>
+</div>
+
+<!-- Feed Grid -->
+<div class="feed-grid">
+    {% for s in submissions %}
+    <div class="feed-card">
+        <div class="feed-card-top">
+            <div class="feed-card-icon">
+                {% if s.category == 'infrastructure' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                {% elif s.category == 'environment' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 19.11a1 1 0 001.61 1.18C7 18.5 9.5 14 17 8z"/><path d="M5 11C8 9 15 9 17 8c-3 7-9 11-12 11"/></svg>
+                {% elif s.category == 'public_safety' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {% endif %}
+            </div>
+            <div style="flex:1;">
+                <div class="feed-card-title">{{ s.title }}</div>
+                <div class="feed-card-meta">
+                    {% if s.location_address %}
+                    <div class="feed-card-loc">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        {{ s.location_address|truncatechars:30 }}
+                    </div>
+                    {% endif %}
+                    <span class="feed-card-time">{{ s.created_at|timesince }} ago</span>
+                </div>
+            </div>
+            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
+            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
+            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending</span>
+            {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+        </div>
+
+        {% if s.description %}
+        <p class="feed-card-desc">{{ s.description|truncatechars:120 }}</p>
+        {% endif %}
+
+        <div class="feed-card-footer">
+            <div class="feed-card-actions">
+                <button class="feed-action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+                    Dukung
+                </button>
+                <button class="feed-action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    Share
+                </button>
+            </div>
+            {% if s.status == 'resolved' %}
+            <div class="feed-verified-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Verified Fix
+            </div>
+            {% else %}
+            <a href="{% url 'user_my_submissions' %}" style="font-size:0.75rem; font-weight:600; color:var(--green-dark); text-decoration:none;">View Progress →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:14px; opacity:0.35;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <p style="font-size:0.9rem; font-weight:600; margin-bottom:6px;">Belum ada laporan di feed komunitas.</p>
+        <p style="font-size:0.82rem;">Jadilah yang pertama membuat laporan!</p>
+        <a href="{% url 'user_new_report' %}" class="btn btn-primary" style="margin-top:16px; display:inline-flex;">Buat Laporan</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if submissions %}
+<button class="load-more-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    Load more community reports
+</button>
+{% endif %}
+{% endblock %}
