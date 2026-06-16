@@ -1,4 +1,108 @@
-<div class="actions-card" style="text-align: center; padding: 60px 20px;">
-    <h3>Reports Management</h3>
-    <p style="color: var(--text-muted); margin-top: 10px;">Review and manage citizens complaints and submissions.</p>
+<style>
+.reports-mgmt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+.reports-mgmt-table th {
+    background: var(--bg);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.reports-mgmt-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dark);
+    vertical-align: middle;
+}
+.reports-mgmt-table tr:last-child td { border-bottom: none; }
+.reports-mgmt-table tr:hover td { background: var(--green-pale); }
+.report-id-chip {
+    font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+}
+.status-select {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+    background: white;
+}
+.status-select.s-pending    { border-color:#d97706; color:#92400e; background:#fffbeb; }
+.status-select.s-in_progress{ border-color:#2563eb; color:#1e3a8a; background:#eff6ff; }
+.status-select.s-resolved   { border-color:#16a34a; color:#14532d; background:#f0fdf4; }
+</style>
+
+<div class="actions-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+        <h3 style="font-size:1.05rem; font-weight:700;">Manajemen Laporan</h3>
+        <span style="font-size:0.8rem; color:var(--text-muted);">{{ total_reports }} total laporan</span>
+    </div>
+
+    {% if all_reports %}
+    <div style="overflow-x:auto;">
+        <table class="reports-mgmt-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Judul Laporan</th>
+                    <th>Pelapor</th>
+                    <th>Kategori</th>
+                    <th>Lokasi</th>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in all_reports %}
+                <tr>
+                    <td class="report-id-chip">#{{ r.id }}</td>
+                    <td style="max-width:200px;">
+                        <div style="font-weight:600;">{{ r.title|truncatechars:45 }}</div>
+                        {% if r.description %}
+                        <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">{{ r.description|truncatechars:60 }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.user.username }}</td>
+                    <td>
+                        <span style="padding:3px 9px; border-radius:20px; font-size:0.72rem; font-weight:600; background:var(--green-pale); color:var(--green-dark);">
+                            {{ r.get_category_display }}
+                        </span>
+                    </td>
+                    <td style="max-width:160px; font-size:0.78rem; color:var(--text-muted);">
+                        {{ r.location_address|truncatechars:35|default:"—" }}
+                    </td>
+                    <td style="font-size:0.78rem; white-space:nowrap;">{{ r.created_at|date:"d M Y" }}</td>
+                    <td>
+                        <form method="post" action="{% url 'admin_update_status' r.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <select name="status" class="status-select s-{{ r.status }}"
+                                onchange="this.form.submit(); this.className='status-select s-'+this.value;">
+                                <option value="pending"      {% if r.status == 'pending' %}selected{% endif %}>Menunggu</option>
+                                <option value="in_progress"  {% if r.status == 'in_progress' %}selected{% endif %}>Diproses</option>
+                                <option value="resolved"     {% if r.status == 'resolved' %}selected{% endif %}>Selesai</option>
+                            </select>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:14px; opacity:0.35;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p style="font-size:0.9rem; font-weight:600;">Belum ada laporan masuk.</p>
+        <p style="font-size:0.82rem; margin-top:4px;">Laporan dari warga akan tampil di sini secara real-time.</p>
+    </div>
+    {% endif %}
 </div>

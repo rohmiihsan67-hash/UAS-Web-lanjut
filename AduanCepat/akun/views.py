@@ -8,7 +8,21 @@ from .forms import CitizenRegistrationForm
 
 @login_required(login_url='/akun/login/')
 def home_view(request):
-    return render(request, 'akun/home.html')
+    from user.models import Submission
+    total_reports  = Submission.objects.count()
+    resolved       = Submission.objects.filter(status='resolved').count()
+    in_progress    = Submission.objects.filter(status='in_progress').count()
+    success_rate   = round((resolved / total_reports * 100), 1) if total_reports > 0 else 0
+    recent_reports = Submission.objects.all().order_by('-created_at')[:4]
+
+    context = {
+        'total_reports':  total_reports,
+        'resolved_count': resolved,
+        'in_progress_count': in_progress,
+        'success_rate':   success_rate,
+        'recent_reports': recent_reports,
+    }
+    return render(request, 'akun/home.html', context)
 
 
 @login_required(login_url='/akun/login/')
@@ -35,16 +49,70 @@ def admin_dashboard_view(request):
         form = AdminProfileForm(instance=profile)
 
     from django.contrib.auth.models import User
+    from user.models import Submission
+
     user_count = User.objects.count()
+    total_reports = Submission.objects.count()
+    pending_actions = Submission.objects.filter(status__in=['pending', 'in_progress']).count()
+    resolved_reports = Submission.objects.filter(status='resolved').count()
+    
+    if total_reports > 0:
+        success_rate = int((resolved_reports / total_reports) * 100)
+    else:
+        success_rate = 0
+
+    recent_reports = Submission.objects.all().order_by('-created_at')[:5]
+    all_reports    = Submission.objects.all().order_by('-created_at')
+
+    # Category breakdown for hotspot chart
+    infra_count   = Submission.objects.filter(category='infrastructure').count()
+    env_count     = Submission.objects.filter(category='environment').count()
+    safety_count  = Submission.objects.filter(category='public_safety').count()
+    other_count   = Submission.objects.filter(category='other').count()
+
+    def pct(n):
+        return round((n / total_reports) * 100) if total_reports > 0 else 0
+
+    staff_members = User.objects.filter(is_staff=True).order_by('-date_joined')
 
     context = {
         'profile': profile,
         'form': form,
         'is_editing': request.GET.get('edit') == '1' or not profile.is_profile_complete,
-        'actions': [],  # Data tindakan administratif kosong
+        'actions': [],
         'user_count': user_count,
+        'total_reports': total_reports,
+        'pending_actions': pending_actions,
+        'resolved_reports': resolved_reports,
+        'success_rate': success_rate,
+        'recent_reports': recent_reports,
+        'all_reports': all_reports,
+        'infra_count':   infra_count,   'infra_pct':   pct(infra_count),
+        'env_count':     env_count,     'env_pct':     pct(env_count),
+        'safety_count':  safety_count,  'safety_pct':  pct(safety_count),
+        'other_count':   other_count,   'other_pct':   pct(other_count),
+        'staff_members': staff_members,
     }
     return render(request, 'admin/admin_dashboard.html', context)
+
+
+@login_required(login_url='/akun/login/')
+def admin_update_status(request, report_id):
+    """Admin: update status of a submission from the Reports tab."""
+    if not request.user.is_staff:
+        messages.error(request, 'Akses ditolak.')
+        return redirect('/')
+    if request.method == 'POST':
+        from user.models import Submission
+        from django.shortcuts import get_object_or_404
+        report = get_object_or_404(Submission, pk=report_id)
+        new_status = request.POST.get('status')
+        valid_statuses = ['pending', 'in_progress', 'resolved']
+        if new_status in valid_statuses:
+            report.status = new_status
+            report.save()
+            messages.success(request, f'Status laporan #{report_id} diubah ke "{new_status}".')
+    return redirect('/akun/admin-dashboard/?tab=reports')
 
 
 def register_view(request):

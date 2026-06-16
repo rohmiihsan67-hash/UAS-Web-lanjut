@@ -33,11 +33,29 @@ def overview_view(request):
 
 @login_required(login_url='/akun/login/')
 def incident_map_view(request):
+    import json
     profile = get_user_profile(request.user)
-    submissions = Submission.objects.all().order_by('-created_at')[:20]
+    submissions = Submission.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True).order_by('-created_at')[:50]
+    
+    pins = []
+    for sub in submissions:
+        pins.append({
+            'id': sub.id,
+            'title': sub.title,
+            'category': sub.get_category_display(),
+            'status': sub.status,
+            'status_display': sub.get_status_display(),
+            'lat': sub.latitude,
+            'lng': sub.longitude,
+            'address': sub.location_address,
+            'time': sub.created_at.strftime("%d %b %Y %H:%M"),
+            'color': sub.status_color
+        })
+
     context = {
         'profile': profile,
         'submissions': submissions,
+        'pins_json': json.dumps(pins),
         'active_page': 'incident_map',
     }
     return render(request, 'user/incident_map.html', context)
@@ -126,6 +144,13 @@ def settings_view(request):
                 messages.success(request, 'Password berhasil diubah!')
             else:
                 messages.error(request, 'Password lama salah.')
+        elif action == 'update_regional':
+            language = request.POST.get('language')
+            timezone = request.POST.get('timezone')
+            profile.language = language
+            profile.timezone = timezone
+            profile.save()
+            messages.success(request, 'Regional preferences saved successfully!')
         return redirect('user_settings')
     context = {
         'profile': profile,
@@ -143,6 +168,11 @@ def new_report_view(request):
         priority = request.POST.get('priority', 'medium')
         description = request.POST.get('description', '')
         location_address = request.POST.get('location_address', '')
+        
+        lat = request.POST.get('latitude')
+        lng = request.POST.get('longitude')
+        photo = request.FILES.get('photo')
+
         if title:
             Submission.objects.create(
                 user=request.user,
@@ -151,6 +181,9 @@ def new_report_view(request):
                 priority=priority,
                 description=description,
                 location_address=location_address,
+                latitude=float(lat) if lat else None,
+                longitude=float(lng) if lng else None,
+                photo=photo,
                 status='pending',
             )
             messages.success(request, 'Laporan berhasil dikirim!')

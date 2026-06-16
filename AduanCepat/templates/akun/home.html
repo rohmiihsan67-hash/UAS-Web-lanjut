@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - AduanCepat</title>
+    <title>Beranda - AduanCepat</title>
     <meta name="description" content="Platform resmi pengaduan warga AduanCepat. Lapor cepat, tindak tepat.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -797,9 +797,14 @@
                 <span class="nav-brand-name">AduanCepat</span>
             </a>
             <div class="nav-links">
-                <a href="/" class="active">Dashboard</a>
-                <a href="#">Reports</a>
-                <a href="#">Analytics</a>
+                <a href="/" class="active">Beranda</a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}">Dasbor</a>
+                {% else %}
+                <a href="{% url 'user_overview' %}">Dasbor</a>
+                {% endif %}
+                <a href="{% url 'user_public_feed' %}">Laporan</a>
+                <a href="{% url 'user_incident_map' %}">Peta Insiden</a>
             </div>
             <div class="nav-right">
                 <span class="nav-username">{{ user.first_name|default:user.username }}</span>
@@ -821,31 +826,38 @@
                 </h1>
                 <p class="hero-desc">Sampaikan aspirasi dan keluhan Anda langsung kepada otoritas terkait. Membangun lingkungan yang lebih baik, melalui transparansi dan respons cepat.</p>
                 <div class="hero-actions">
-                    <a href="#" class="btn-hero-primary" onclick="alert('Fitur segera hadir!')">
+                    <a href="{% url 'user_new_report' %}" class="btn-hero-primary">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                         </svg>
                         Mulai Melapor
                     </a>
-                    <a href="#" class="btn-hero-secondary">
+                    <a href="{% url 'user_public_feed' %}" class="btn-hero-secondary">
                         Lihat Laporan Publik
                     </a>
                 </div>
             </div>
             <div class="hero-image-wrap">
                 <div class="hero-img-card">
-                    <img src="{% static 'images/road_repair.png' %}" alt="Perbaikan jalan oleh Dinas PU">
+                    {% if recent_reports and recent_reports.0.photo %}
+                    <img src="{{ recent_reports.0.photo.url }}" alt="{{ recent_reports.0.title }}" style="object-fit: cover; width: 100%; height: 280px;">
+                    {% else %}
+                    <div style="width: 100%; height: 280px; background: linear-gradient(135deg, var(--green-pale), #dcfce7); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--green-dark);">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 10px; opacity: 0.5;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span style="font-weight: 700; font-size: 1.1rem; opacity: 0.7;">AduanCepat</span>
+                    </div>
+                    {% endif %}
                     <div class="hero-stat-bar">
                         <div class="stat-item">
                             <div class="stat-check">
                                 <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 Tingkat Penyelesaian
                             </div>
-                            <span class="stat-value">94.2%</span>
+                            <span class="stat-value">{{ success_rate|default:"0" }}%</span>
                         </div>
                         <div class="stat-item" style="text-align:right;">
-                            <span class="stat-label">Rata-rata Respons</span>
-                            <span class="stat-value">Harian</span>
+                            <span class="stat-label">Total Laporan</span>
+                            <span class="stat-value">{{ total_reports|default:"0" }}</span>
                         </div>
                     </div>
                 </div>
@@ -917,61 +929,62 @@
                 </a>
             </div>
             <div class="reports-grid">
-                <!-- Featured Report -->
-                <div class="report-featured">
-                    <img src="{% static 'images/road_repair.png' %}" alt="Perbaikan jalan berlubang">
-                    <div class="report-featured-body">
-                        <span class="report-tag tag-diproses">🔄 Diproses</span>
-                        <h3 class="report-featured-title">Perbaikan Jalan Berlubang – Jl. Sudirman</h3>
-                        <p class="report-featured-desc">Warga mempermasalahkan kondisi jalan yang sudah parah berlubang dan saat ini sedang dalam tahap pengerjaan oleh Dinas PU.</p>
-                        <div class="report-meta">
-                            <span>
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                                Jakarta Pusat
-                            </span>
-                            <span>
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                                2 hari yang lalu
-                            </span>
+                {% if recent_reports %}
+                    <!-- Featured Report (First item) -->
+                    {% with featured=recent_reports.0 %}
+                    <div class="report-featured">
+                        {% if featured.photo %}
+                        <img src="{{ featured.photo.url }}" alt="{{ featured.title }}">
+                        {% else %}
+                        <div style="width: 100%; height: 240px; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: #cbd5e1; border-bottom: 1px solid var(--border);">
+                            <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        </div>
+                        {% endif %}
+                        <div class="report-featured-body">
+                            {% if featured.status == 'resolved' %}<span class="report-tag tag-selesai">✅ Selesai</span>
+                            {% elif featured.status == 'in_progress' %}<span class="report-tag tag-diproses">🔄 Diproses</span>
+                            {% else %}<span class="report-tag tag-pending">🕐 Menunggu</span>{% endif %}
+                            
+                            <h3 class="report-featured-title">{{ featured.title }}</h3>
+                            <p class="report-featured-desc">{{ featured.description|truncatechars:120 }}</p>
+                            <div class="report-meta">
+                                <span>
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                    {{ featured.location_address|truncatechars:30|default:"Tidak ada lokasi spesifik" }}
+                                </span>
+                                <span>
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                    {{ featured.created_at|timesince }} yang lalu
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- Sidebar Reports -->
-                <div class="reports-sidebar">
-                    <div class="report-small">
-                        <div class="report-tag tag-selesai">✅ Selesai</div>
-                        <h4 class="report-small-title">Penerangan Jalan Mati di Perempatan Kota</h4>
-                        <p class="report-small-desc">Lampu jalan di perempatan kota sudah diperbaiki dan berfungsi kembali.</p>
-                        <div class="report-small-footer">
-                            <span class="report-location">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                                Surabaya · Kemarin
-                            </span>
+                    {% endwith %}
+
+                    <!-- Sidebar Reports (Rest) -->
+                    <div class="reports-sidebar">
+                        {% for report in recent_reports|slice:"1:" %}
+                        <div class="report-small">
+                            {% if report.status == 'resolved' %}<div class="report-tag tag-selesai">✅ Selesai</div>
+                            {% elif report.status == 'in_progress' %}<div class="report-tag tag-diproses">🔄 Diproses</div>
+                            {% else %}<div class="report-tag tag-pending">🕐 Menunggu</div>{% endif %}
+
+                            <h4 class="report-small-title">{{ report.title }}</h4>
+                            <p class="report-small-desc">{{ report.description|truncatechars:80 }}</p>
+                            <div class="report-small-footer">
+                                <span class="report-location">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                                    {{ report.location_address|truncatechars:20|default:"Lokasi -" }} · {{ report.created_at|timesince }} lalu
+                                </span>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    <div class="report-small">
-                        <div class="report-tag tag-pending">🕐 Pending</div>
-                        <h4 class="report-small-title">Sampah Menumpuk di Lorong Belakang Pasar</h4>
-                        <p class="report-small-desc">Tumpukan sampah semakin banyak di lorong kosong yang ada di belakang pasar malam.</p>
-                        <div class="report-small-footer">
-                            <span class="report-location">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                                Surabaya · 3 hari lalu
-                            </span>
-                        </div>
+                {% else %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                        Belum ada laporan dari warga. Jadilah yang pertama!
                     </div>
-                    <div class="report-small">
-                        <div class="report-tag tag-diproses">🔄 Diproses</div>
-                        <h4 class="report-small-title">Selokan Tersumbat Akibat Sampah Plastik</h4>
-                        <p class="report-small-desc">Aliran air tersumbat dan menyebabkan genangan air di depan permukiman warga.</p>
-                        <div class="report-small-footer">
-                            <span class="report-location">
-                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                                Bandung · 4 hari lalu
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </section>
@@ -983,7 +996,7 @@
                 <h2>Siap Membuat Perubahan?</h2>
                 <p>Bergabunglah dengan ribuan warga yang telah berkontribusi untuk menciptakan lingkungan yang lebih bersih, aman, dan nyaman.</p>
                 <div class="cta-buttons">
-                    <a href="#" class="btn-cta-white" onclick="alert('Fitur segera hadir!')">Daftar Sekarang</a>
+                    <a href="{% url 'register' %}" class="btn-cta-white">Daftar Sekarang</a>
                     <a href="#" class="btn-cta-outline">Hubungi Kami</a>
                 </div>
             </div>

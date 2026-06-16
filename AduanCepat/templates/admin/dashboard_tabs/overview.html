@@ -1,4 +1,4 @@
-<div id="overview-active-content" style="display: none;">
+<div id="overview-active-content" style="{% if total_reports > 0 %}display: block;{% else %}display: none;{% endif %}">
     <!-- Metrics Grid -->
     <div class="metrics-grid">
         <!-- Card 1: Total Reports -->
@@ -16,8 +16,8 @@
                 <span class="metric-badge-status badge-status-green">+12.5%</span>
             </div>
             <div class="metric-details-wrap">
-                <span class="metric-card-title">Total Reports</span>
-                <span class="metric-card-value">1,284</span>
+                <span class="metric-card-title">Total Laporan</span>
+                <span class="metric-card-value">{{ total_reports }}</span>
             </div>
         </div>
 
@@ -31,11 +31,11 @@
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
                 </div>
-                <span class="metric-badge-status badge-status-red">High Priority</span>
+                <span class="metric-badge-status badge-status-red">Prioritas Tinggi</span>
             </div>
             <div class="metric-details-wrap">
-                <span class="metric-card-title">Pending Actions</span>
-                <span class="metric-card-value">42</span>
+                <span class="metric-card-title">Menunggu Tindakan</span>
+                <span class="metric-card-value">{{ pending_actions }}</span>
             </div>
         </div>
 
@@ -50,10 +50,10 @@
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                 </div>
-                <span class="metric-badge-status badge-status-blue">Registered</span>
+                <span class="metric-badge-status badge-status-blue">Terdaftar</span>
             </div>
             <div class="metric-details-wrap">
-                <span class="metric-card-title">Active Users</span>
+                <span class="metric-card-title">Pengguna Aktif</span>
                 <span class="metric-card-value">{{ user_count|default:"0" }}</span>
             </div>
         </div>
@@ -67,11 +67,11 @@
                         <polyline points="22 4 12 14.01 9 11.01"/>
                     </svg>
                 </div>
-                <span class="metric-badge-status badge-status-teal">88% Success</span>
+                <span class="metric-badge-status badge-status-teal">{{ success_rate }}% Berhasil</span>
             </div>
             <div class="metric-details-wrap">
-                <span class="metric-card-title">Resolved Reports</span>
-                <span class="metric-card-value">1,120</span>
+                <span class="metric-card-title">Laporan Selesai</span>
+                <span class="metric-card-value">{{ resolved_reports }}</span>
             </div>
         </div>
     </div>
@@ -82,12 +82,12 @@
         <div class="trends-card">
             <div class="trends-header">
                 <div class="trends-title-wrap">
-                    <h3>Report Trends</h3>
-                    <p>Weekly incident reporting volume</p>
+                    <h3>Tren Laporan</h3>
+                    <p>Volume laporan insiden mingguan</p>
                 </div>
                 <select class="select-filter-sm">
-                    <option>Last 7 Days</option>
-                    <option>Last 30 Days</option>
+                    <option>7 Hari Terakhir</option>
+                    <option>30 Hari Terakhir</option>
                 </select>
             </div>
             
@@ -122,13 +122,13 @@
                     <circle cx="580" cy="50" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
                     
                     <!-- X Axis Labels -->
-                    <text x="40" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Mon</text>
-                    <text x="130" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Tue</text>
-                    <text x="220" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Wed</text>
-                    <text x="310" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Thu</text>
-                    <text x="400" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Fri</text>
-                    <text x="490" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sat</text>
-                    <text x="580" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sun</text>
+                    <text x="40" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sen</text>
+                    <text x="130" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sel</text>
+                    <text x="220" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Rab</text>
+                    <text x="310" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Kam</text>
+                    <text x="400" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Jum</text>
+                    <text x="490" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sab</text>
+                    <text x="580" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Min</text>
                 </svg>
             </div>
         </div>
@@ -136,46 +136,25 @@
         <!-- Recent Reports Card -->
         <div class="recent-reports-card">
             <div class="trends-header">
-                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">Recent Reports</h3>
-                <a href="#" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">View All</a>
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">Laporan Terbaru</h3>
+                <a href="#" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">Lihat Semua</a>
             </div>
             
             <div class="recent-reports-list" id="recent-reports-list-container">
-                <!-- Report 1 -->
-                <div class="report-list-item" data-search-term="broken water pipe jakarta selatan emergency">
+                {% for report in recent_reports %}
+                <div class="report-list-item" data-search-term="{{ report.title|lower }} {{ report.location_address|lower }} {{ report.category }}">
                     <div class="report-list-left">
-                        <div class="report-color-indicator indicator-emergency"></div>
+                        <div class="report-color-indicator indicator-{{ report.status_color }}"></div>
                         <div class="report-meta-text">
-                            <span class="report-item-title">Broken Water Pipe</span>
-                            <span class="report-item-sub">Jakarta Selatan • 10 mins ago</span>
+                            <span class="report-item-title">{{ report.title }}</span>
+                            <span class="report-item-sub">{{ report.location_address }} • {{ report.created_at|timesince }} yang lalu</span>
                         </div>
                     </div>
-                    <span class="badge-report-tag badge-tag-emergency">Emergency</span>
+                    <span class="badge-report-tag badge-tag-{{ report.status_color }}">{{ report.get_status_display }}</span>
                 </div>
-                
-                <!-- Report 2 -->
-                <div class="report-list-item" data-search-term="public park trash bandung maintenance">
-                    <div class="report-list-left">
-                        <div class="report-color-indicator indicator-maintenance"></div>
-                        <div class="report-meta-text">
-                            <span class="report-item-title">Public Park Trash</span>
-                            <span class="report-item-sub">Bandung • 1 hour ago</span>
-                        </div>
-                    </div>
-                    <span class="badge-report-tag badge-tag-maintenance">Maintenance</span>
-                </div>
-                
-                <!-- Report 3 -->
-                <div class="report-list-item" data-search-term="new street light surabaya verified">
-                    <div class="report-list-left">
-                        <div class="report-color-indicator indicator-verified"></div>
-                        <div class="report-meta-text">
-                            <span class="report-item-title">New Street Light</span>
-                            <span class="report-item-sub">Surabaya • 3 hours ago</span>
-                        </div>
-                    </div>
-                    <span class="badge-report-tag badge-tag-verified">Verified</span>
-                </div>
+                {% empty %}
+                <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Tidak ada laporan terbaru.</div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -190,34 +169,43 @@
                     <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
                     <path d="M2 12h20"/>
                 </svg>
-                Regional Hotspots
+                Area Panas Regional
             </h3>
             <div class="hotspots-list">
                 <div class="hotspot-item">
                     <div class="hotspot-meta-row">
-                        <span>Jakarta</span>
-                        <span>75%</span>
+                        <span>🏗️ Infrastruktur</span>
+                        <span>{{ infra_count }} ({{ infra_pct }}%)</span>
                     </div>
                     <div class="hotspot-bar-track">
-                        <div class="hotspot-bar-fill-pct" style="width: 75%;"></div>
+                        <div class="hotspot-bar-fill-pct" style="width: {{ infra_pct }}%;"></div>
                     </div>
                 </div>
                 <div class="hotspot-item">
                     <div class="hotspot-meta-row">
-                        <span>Bandung</span>
-                        <span>42%</span>
+                        <span>🌿 Lingkungan</span>
+                        <span>{{ env_count }} ({{ env_pct }}%)</span>
                     </div>
                     <div class="hotspot-bar-track">
-                        <div class="hotspot-bar-fill-pct" style="width: 42%;"></div>
+                        <div class="hotspot-bar-fill-pct" style="width: {{ env_pct }}%;"></div>
                     </div>
                 </div>
                 <div class="hotspot-item">
                     <div class="hotspot-meta-row">
-                        <span>Surabaya</span>
-                        <span>28%</span>
+                        <span>🛡️ Keamanan Publik</span>
+                        <span>{{ safety_count }} ({{ safety_pct }}%)</span>
                     </div>
                     <div class="hotspot-bar-track">
-                        <div class="hotspot-bar-fill-pct" style="width: 28%;"></div>
+                        <div class="hotspot-bar-fill-pct" style="width: {{ safety_pct }}%;"></div>
+                    </div>
+                </div>
+                <div class="hotspot-item">
+                    <div class="hotspot-meta-row">
+                        <span>📋 Lainnya</span>
+                        <span>{{ other_count }} ({{ other_pct }}%)</span>
+                    </div>
+                    <div class="hotspot-bar-track">
+                        <div class="hotspot-bar-fill-pct" style="width: {{ other_pct }}%;"></div>
                     </div>
                 </div>
             </div>
@@ -230,7 +218,7 @@
     </div>
 </div> <!-- /#overview-active-content -->
 
-<div id="overview-empty-state" style="display: block;">
+<div id="overview-empty-state" style="{% if total_reports == 0 %}display: block;{% else %}display: none;{% endif %}">
     <div class="empty-state-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); padding: 80px 24px; text-align: center; border: 2px dashed rgba(26,60,26,0.12); border-radius: 24px; background: var(--white); box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-top: 8px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 56px; height: 56px; color: var(--green-dark); opacity: 0.6;">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -239,10 +227,10 @@
         </svg>
         <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-dark);">Belum Ada Aktivitas Laporan</h3>
         <p style="font-size: 0.88rem; max-width: 460px; line-height: 1.5;">
-            Saat ini belum ada laporan kejadian yang masuk ke sistem. Silakan buka menu <strong>Incident Map</strong> untuk mulai menambahkan laporan secara interaktif di peta.
+            Saat ini belum ada laporan kejadian yang masuk ke sistem. Silakan buka menu <strong>Peta Insiden</strong> untuk mulai menambahkan laporan secara interaktif di peta.
         </p>
         <button onclick="document.querySelectorAll('.topbar-tab-link')[1].click()" style="padding: 10px 20px; background: var(--green-dark); color: white; border: none; border-radius: 10px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
-            Buka Incident Map
+            Buka Peta Insiden
         </button>
     </div>
 </div>

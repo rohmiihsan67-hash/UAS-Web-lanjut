@@ -1,5 +1,5 @@
 {% extends 'user/base_user.html' %}
-{% block title %}My Submissions{% endblock %}
+{% block title %}Laporan Saya{% endblock %}
 {% block meta_desc %}Kelola dan pantau semua laporan yang telah Anda kirimkan.{% endblock %}
 
 {% block extra_head %}
@@ -232,13 +232,13 @@
 {% block content %}
 <div class="subs-header-row">
     <div>
-        <h1 class="page-title">My Submissions</h1>
+        <h1 class="page-title">Laporan Saya</h1>
         <p class="page-subtitle">Lihat dan pantau perkembangan laporan yang telah Anda kirimkan.</p>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
         <div class="subs-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="subs-search-input" placeholder="Search reports...">
+            <input type="text" id="subs-search-input" placeholder="Cari laporan...">
         </div>
         <button class="btn btn-outline" style="white-space:nowrap; font-size:0.8rem; padding:8px 14px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
@@ -250,19 +250,19 @@
 <!-- Stats Strip -->
 <div class="subs-stat-strip">
     <div class="subs-stat">
-        <div class="subs-stat-label">Total Filed</div>
+        <div class="subs-stat-label">Total Terkirim</div>
         <div class="subs-stat-value">{{ total }}</div>
     </div>
     <div class="subs-stat">
-        <div class="subs-stat-label">In Progress</div>
+        <div class="subs-stat-label">Sedang Diproses</div>
         <div class="subs-stat-value blue">{{ in_progress }}</div>
     </div>
     <div class="subs-stat">
-        <div class="subs-stat-label">Resolved</div>
+        <div class="subs-stat-label">Selesai</div>
         <div class="subs-stat-value green">{{ resolved }}</div>
     </div>
     <div class="subs-stat">
-        <div class="subs-stat-label">Pending</div>
+        <div class="subs-stat-label">Menunggu</div>
         <div class="subs-stat-value orange">{{ pending }}</div>
     </div>
 </div>
@@ -271,7 +271,7 @@
 {% if submissions %}
 {% with latest=submissions.first %}
 <div class="subs-highlight">
-    <div class="subs-highlight-label">🔔 Current Focus</div>
+    <div class="subs-highlight-label">🔔 Fokus Saat Ini</div>
     <div class="subs-highlight-text">Laporan terbaru Anda "<strong>{{ latest.title|truncatechars:50 }}</strong>" sedang dalam proses verifikasi.</div>
 </div>
 {% endwith %}
@@ -284,10 +284,10 @@
             <table class="subs-table">
                 <thead>
                     <tr>
-                        <th>Incident Details</th>
-                        <th>Date Submitted</th>
+                        <th>Detail Insiden</th>
+                        <th>Tanggal Kirim</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="subs-tbody">
@@ -317,12 +317,12 @@
                         </td>
                         <td style="white-space:nowrap; font-size:0.8rem;">{{ s.created_at|date:"M d, Y" }}</td>
                         <td>
-                            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
-                            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In-Progress</span>
-                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
-                            {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
+                            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
+                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
+                            {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
                         </td>
-                        <td><a href="#" class="action-link">View Details</a></td>
+                        <td><a href="#" class="action-link">Lihat Detail</a></td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -338,7 +338,7 @@
             </table>
             {% if submissions %}
             <div class="table-footer">
-                <div class="table-footer-info">Showing {{ submissions|length }} of {{ total }} submissions</div>
+                <div class="table-footer-info">Menampilkan {{ submissions|length }} dari {{ total }} laporan</div>
                 <div class="pagination">
                     <button class="page-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -354,7 +354,7 @@
 
         <!-- Recent Status History -->
         <div class="history-section">
-            <h2 class="history-title">Recent Status History</h2>
+            <h2 class="history-title">Riwayat Status Terkini</h2>
             <div class="card" style="padding:20px 22px;">
                 <div class="history-list">
                     {% for s in submissions|slice:":3" %}
@@ -368,8 +368,8 @@
                                 {% else %}Laporan Dikirim — Menunggu Tindakan{% endif %}
                             </div>
                             <div class="history-sub">{{ s.title|truncatechars:60 }}</div>
-                            {% if s.status == 'in_progress' %}<span class="badge badge-progress" style="margin-top:5px;">IN PROGRESS</span>
-                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub" style="margin-top:5px;">PENDING PUBLICATION</span>{% endif %}
+                            {% if s.status == 'in_progress' %}<span class="badge badge-progress" style="margin-top:5px;">DIPROSES</span>
+                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub" style="margin-top:5px;">MENUNGGU PUBLIKASI</span>{% endif %}
                         </div>
                     </div>
                     {% empty %}
@@ -383,7 +383,7 @@
     <!-- Right: Resolution Rate -->
     <div>
         <div class="resolution-card">
-            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Resolution Rate</div>
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Tingkat Penyelesaian</div>
             <div class="resolution-rate">
                 {% if total > 0 %}{% widthratio resolved total 100 %}%{% else %}0%{% endif %}
             </div>

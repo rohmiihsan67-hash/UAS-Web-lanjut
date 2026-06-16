@@ -11,6 +11,8 @@ class UserProfile(models.Model):
     avatar = models.ImageField('Foto Profil', upload_to='avatars/', null=True, blank=True)
     is_verified = models.BooleanField('Terverifikasi', default=False)
     trust_score = models.PositiveIntegerField('Community Trust Score', default=85)
+    language = models.CharField('Language', max_length=10, default='id')
+    timezone = models.CharField('Timezone', max_length=50, default='Asia/Jakarta')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,6 +49,9 @@ class Submission(models.Model):
     priority = models.CharField('Prioritas', max_length=10, choices=PRIORITY_CHOICES, default='medium')
     description = models.TextField('Deskripsi', blank=True)
     location_address = models.CharField('Alamat Lokasi', max_length=255, blank=True)
+    latitude = models.FloatField('Latitude', null=True, blank=True)
+    longitude = models.FloatField('Longitude', null=True, blank=True)
+    photo = models.ImageField('Foto Bukti', upload_to='incident_photos/', null=True, blank=True)
     status = models.CharField('Status', max_length=30, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -55,6 +60,13 @@ class Submission(models.Model):
         verbose_name = 'Submission'
         verbose_name_plural = 'Submissions'
         ordering = ['-created_at']
+
+    @property
+    def status_color(self):
+        if self.status == 'pending': return 'emergency'
+        if self.status == 'in_progress': return 'maintenance'
+        if self.status == 'resolved': return 'verified'
+        return 'emergency'
 
     def __str__(self):
         return f'#{self.pk} - {self.title}'

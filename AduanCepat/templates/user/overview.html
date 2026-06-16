@@ -1,5 +1,5 @@
 {% extends 'user/base_user.html' %}
-{% block title %}Overview{% endblock %}
+{% block title %}Beranda{% endblock %}
 {% block meta_desc %}Ringkasan aktivitas laporan Anda di AduanCepat.{% endblock %}
 
 {% block extra_head %}
@@ -171,7 +171,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Overview</h1>
+    <h1 class="page-title">Beranda</h1>
     <p class="page-subtitle">Selamat datang kembali, {{ request.user.get_full_name|default:request.user.username }}. Pantau aktivitas laporan Anda.</p>
 </div>
 
@@ -189,12 +189,12 @@
         <span class="quick-stat-tag" style="color: var(--text-muted);">semua laporan</span>
     </div>
     <div class="quick-stat">
-        <span class="quick-stat-label">Resolved</span>
+        <span class="quick-stat-label">Selesai</span>
         <span class="quick-stat-value green">{{ resolved }}</span>
         <span class="quick-stat-tag resolved">✓ selesai ditangani</span>
     </div>
     <div class="quick-stat">
-        <span class="quick-stat-label">Pending Action</span>
+        <span class="quick-stat-label">Menunggu Aksi</span>
         <span class="quick-stat-value orange">{{ in_progress }}</span>
         <span class="quick-stat-tag progress">⟳ sedang diproses</span>
     </div>
@@ -229,10 +229,10 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
-                        {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
-                        {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
-                        {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                        {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
+                        {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
+                        {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
+                        {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
                     </td>
                     <td style="font-size:0.78rem; white-space:nowrap;">{{ s.created_at|date:"d M Y" }}</td>
                 </tr>
@@ -250,7 +250,7 @@
     <!-- Trust Score -->
     <div style="display:flex; flex-direction:column; gap:16px;">
         <div class="trust-card">
-            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7;">Community Trust Score</div>
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7;">Skor Kepercayaan Komunitas</div>
             <div class="trust-score">{{ profile.trust_score }}</div>
             <div class="trust-max">/ 100</div>
             <div class="trust-bar-bg">
@@ -268,11 +268,11 @@
                 </a>
                 <a href="{% url 'user_my_submissions' %}" class="btn btn-outline" style="justify-content:center;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Lihat Submissions
+                    Lihat Laporan Saya
                 </a>
                 <a href="{% url 'user_public_feed' %}" class="btn btn-ghost" style="justify-content:center;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    Community Feed
+                    Feed Komunitas
                 </a>
             </div>
         </div>

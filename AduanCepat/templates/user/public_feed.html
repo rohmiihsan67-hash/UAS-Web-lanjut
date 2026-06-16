@@ -1,5 +1,5 @@
 {% extends 'user/base_user.html' %}
-{% block title %}Public Feed{% endblock %}
+{% block title %}Feed Publik{% endblock %}
 {% block meta_desc %}Community feed laporan warga AduanCepat dari seluruh wilayah.{% endblock %}
 
 {% block extra_head %}
@@ -191,7 +191,7 @@
 {% block content %}
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
     <div>
-        <h1 class="page-title">Community Feed</h1>
+        <h1 class="page-title">Feed Komunitas</h1>
         <p class="page-subtitle">Pantau laporan dari seluruh komunitas di lingkungan Anda.</p>
     </div>
     <div style="display:flex; gap:8px;">
@@ -201,7 +201,7 @@
         </button>
         <button class="feed-sort-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/></svg>
-            Latest First
+            Terbaru
         </button>
     </div>
 </div>
@@ -209,17 +209,17 @@
 <!-- Header Stats -->
 <div class="feed-header-stats">
     <div class="feed-stat-card">
-        <div class="feed-stat-title">Reports Resolved</div>
+        <div class="feed-stat-title">Laporan Selesai</div>
         <div class="feed-stat-value">{{ resolved_count }}</div>
         <div class="feed-stat-trend">↑ Berkontribusi bulan ini</div>
     </div>
     <div class="feed-stat-card dark">
-        <div class="feed-stat-title">Active Now</div>
+        <div class="feed-stat-title">Aktif Sekarang</div>
         <div class="feed-stat-value">{{ in_progress_count }}</div>
-        <div class="feed-stat-sub">Reports being investigated by authorities</div>
+        <div class="feed-stat-sub">Laporan sedang diselidiki oleh pihak berwenang</div>
     </div>
     <div class="feed-stat-card">
-        <div class="feed-stat-title">Avg Response</div>
+        <div class="feed-stat-title">Rata-rata Respons</div>
         <div class="feed-stat-value">4.2h</div>
         <div class="feed-stat-sub">Waktu rata-rata respons</div>
     </div>
@@ -250,13 +250,13 @@
                         {{ s.location_address|truncatechars:30 }}
                     </div>
                     {% endif %}
-                    <span class="feed-card-time">{{ s.created_at|timesince }} ago</span>
+                    <span class="feed-card-time">{{ s.created_at|timesince }} yang lalu</span>
                 </div>
             </div>
-            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
-            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
-            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending</span>
-            {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
+            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
+            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
+            {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
         </div>
 
         {% if s.description %}
@@ -271,16 +271,16 @@
                 </button>
                 <button class="feed-action-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                    Share
+                    Bagikan
                 </button>
             </div>
             {% if s.status == 'resolved' %}
             <div class="feed-verified-badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Verified Fix
+                Perbaikan Terverifikasi
             </div>
             {% else %}
-            <a href="{% url 'user_my_submissions' %}" style="font-size:0.75rem; font-weight:600; color:var(--green-dark); text-decoration:none;">View Progress →</a>
+            <a href="{% url 'user_my_submissions' %}" style="font-size:0.75rem; font-weight:600; color:var(--green-dark); text-decoration:none;">Lihat Perkembangan →</a>
             {% endif %}
         </div>
     </div>
@@ -297,7 +297,7 @@
 {% if submissions %}
 <button class="load-more-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    Load more community reports
+    Muat lebih banyak laporan komunitas
 </button>
 {% endif %}
 {% endblock %}

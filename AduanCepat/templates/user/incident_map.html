@@ -159,64 +159,49 @@
         0% { transform: scale(0.8); opacity: 0.4; }
         100% { transform: scale(1.8); opacity: 0; }
     }
+    
+    /* Leaflet overrides */
+    #incident-leaflet-map {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        border-radius: var(--radius-sm);
+    }
 </style>
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Incident Map</h1>
+    <h1 class="page-title">Peta Insiden</h1>
     <p class="page-subtitle">Peta sebaran insiden dan laporan dari seluruh wilayah komunitas.</p>
 </div>
 
 <div class="map-filter-bar">
     <button class="filter-chip active" id="filter-all">Semua</button>
-    <button class="filter-chip" id="filter-infra">Infrastructure</button>
-    <button class="filter-chip" id="filter-env">Environment</button>
-    <button class="filter-chip" id="filter-safety">Public Safety</button>
-    <button class="filter-chip" id="filter-resolved">Resolved</button>
-    <button class="filter-chip" id="filter-progress">In Progress</button>
+    <button class="filter-chip" id="filter-infra">Infrastruktur</button>
+    <button class="filter-chip" id="filter-env">Lingkungan</button>
+    <button class="filter-chip" id="filter-safety">Keselamatan Publik</button>
+    <button class="filter-chip" id="filter-resolved">Selesai</button>
+    <button class="filter-chip" id="filter-progress">Sedang Diproses</button>
 </div>
 
 <div class="map-layout">
     <!-- Map -->
-    <div class="map-container">
-        <div class="map-grid"></div>
-        <!-- Interactive placeholder map -->
-        <div class="map-center-marker">
-            <div class="pulse-dot"></div>
-            <div style="font-size:0.75rem; font-weight:600; color:var(--green-dark); background:white; padding:4px 10px; border-radius:6px; box-shadow:var(--shadow-sm);">Pusat Kota</div>
-        </div>
+    <div class="map-container" style="padding:0; border:1px solid var(--border);">
+        <div id="incident-leaflet-map"></div>
 
-        <!-- Sample pin markers -->
-        {% for s in submissions %}
-        <div class="map-pin" style="
-            position: absolute;
-            top: {{ forloop.counter|add:20 }}%;
-            left: {{ forloop.counter|add:15 }}%;
-            transform: translate(-50%, -50%);
-        ">
-            <div style="
-                width: 12px; height: 12px;
-                background: {% if s.status == 'resolved' %}#16a34a{% elif s.status == 'in_progress' %}#2563eb{% else %}#d97706{% endif %};
-                border-radius: 50%;
-                border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                cursor: pointer;
-                transition: transform 0.15s;
-            " title="{{ s.title }}" onmouseover="this.style.transform='scale(1.5)'" onmouseout="this.style.transform='scale(1)'"></div>
-        </div>
-        {% endfor %}
-
-        <div class="map-overlay-badge">
+        <div class="map-overlay-badge" style="z-index: 999; pointer-events: none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
             {{ submissions|length }} Insiden <span>terdeteksi</span>
         </div>
 
-        <div style="position:absolute; bottom:12px; right:12px; background:white; border-radius:var(--radius-sm); padding:10px 14px; box-shadow:var(--shadow-sm); font-size:0.73rem; display:flex; flex-direction:column; gap:5px;">
+        <div style="position:absolute; bottom:12px; right:12px; background:white; border-radius:var(--radius-sm); padding:10px 14px; box-shadow:var(--shadow-sm); font-size:0.73rem; display:flex; flex-direction:column; gap:5px; z-index: 999;">
             <div style="font-weight:700; margin-bottom:3px; color:var(--text-dark);">Legenda</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#16a34a;border-radius:50%;display:inline-block;"></span> Resolved</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#2563eb;border-radius:50%;display:inline-block;"></span> In Progress</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#d97706;border-radius:50%;display:inline-block;"></span> Pending</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#16a34a;border-radius:50%;display:inline-block;"></span> Selesai</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#2563eb;border-radius:50%;display:inline-block;"></span> Sedang Diproses</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#d97706;border-radius:50%;display:inline-block;"></span> Menunggu</div>
         </div>
     </div>
 
@@ -234,10 +219,10 @@
                 </div>
                 {% endif %}
                 <div class="incident-footer">
-                    {% if s.status == 'resolved' %}<span class="badge badge-resolved">Resolved</span>
-                    {% elif s.status == 'in_progress' %}<span class="badge badge-progress">In Progress</span>
-                    {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Pending Pub.</span>
-                    {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                    {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
+                    {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
+                    {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
+                    {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
                     <span class="incident-date">{{ s.created_at|date:"d M Y" }}</span>
                 </div>
             </div>
@@ -253,12 +238,64 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // Map setup
+    const map = L.map('incident-leaflet-map').setView([-6.2088, 106.8456], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Dynamic Pins
+    const pinsData = {{ pins_json|safe }};
+    const markers = [];
+
+    const getPinColor = (status) => {
+        if (status === 'resolved') return '#16a34a';
+        if (status === 'in_progress') return '#2563eb';
+        return '#d97706'; // pending
+    };
+
+    pinsData.forEach(pin => {
+        // Create custom circle marker
+        const marker = L.circleMarker([pin.lat, pin.lng], {
+            radius: 8,
+            fillColor: getPinColor(pin.status),
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 1
+        }).addTo(map);
+
+        marker.bindPopup(`
+            <div style="font-family:'Inter',sans-serif; min-width:180px;">
+                <div style="font-weight:700; margin-bottom:4px; font-size:14px;">${pin.title}</div>
+                <div style="font-size:12px; color:#666; margin-bottom:6px;">${pin.address || 'Lokasi tidak diketahui'}</div>
+                <div style="font-size:11px; padding:2px 6px; border-radius:4px; background:#f1f5f9; display:inline-block;">
+                    Status: <strong>${pin.status_display}</strong>
+                </div>
+            </div>
+        `);
+        
+        markers.push(marker);
+    });
+
+    // Auto-fit bounds if we have pins
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    // Filter Chips UI
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', function() {
             document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             this.classList.add('active');
+            // Advanced filtering logic can be added here
         });
     });
+
+    setTimeout(() => map.invalidateSize(), 200);
 </script>
 {% endblock %}

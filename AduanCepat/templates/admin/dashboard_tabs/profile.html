@@ -2,9 +2,9 @@
 <!-- Edit Mode Form -->
 <div class="profile-edit-card">
     <div class="actions-header" style="margin-bottom: 20px;">
-        <h3 style="font-size: 1.2rem; color: var(--green-dark);">Edit Admin Profile</h3>
+        <h3 style="font-size: 1.2rem; color: var(--green-dark);">Edit Profil Admin</h3>
         {% if profile.is_profile_complete %}
-        <a href="{% url 'admin_dashboard' %}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Cancel</a>
+        <a href="{% url 'admin_dashboard' %}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Batal</a>
         {% endif %}
     </div>
 
@@ -81,9 +81,9 @@
 
         <div class="form-actions">
             {% if profile.is_profile_complete %}
-            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Cancel</a>
+            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">Batal</a>
             {% endif %}
-            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="submit" class="btn-primary">Simpan Perubahan</button>
         </div>
     </form>
 </div>
@@ -114,14 +114,14 @@
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
-                    Edit Profile
+                    Edit Profil
                 </a>
             </div>
             <div class="profile-role" style="margin-top: 4px;">{{ profile.position|default:"System Administrator" }}</div>
             
             <div class="profile-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; width: 100%;">
                 <div class="profile-detail-item">
-                    <span class="profile-detail-label">Department</span>
+                    <span class="profile-detail-label">Departemen</span>
                     <span class="profile-detail-value">{% if profile.department %}{{ profile.department }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
                 </div>
                 <div class="profile-detail-item">
@@ -133,7 +133,7 @@
                     <span class="profile-detail-value">{% if profile.email %}{{ profile.email }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
                 </div>
                 <div class="profile-detail-item">
-                    <span class="profile-detail-label">Phone</span>
+                    <span class="profile-detail-label">Nomor Telepon</span>
                     <span class="profile-detail-value">{% if profile.phone %}{{ profile.phone }}{% else %}<span class="empty-field">Belum diisi</span>{% endif %}</span>
                 </div>
                 <div class="profile-detail-item">
@@ -160,14 +160,14 @@
 
     <!-- System Impact Card -->
     <div class="impact-card">
-        <div class="impact-title">System Impact</div>
+        <div class="impact-title">Dampak Sistem</div>
         <div class="impact-stats">
             <div class="impact-stat">
-                <span class="impact-stat-label">Reports Validated</span>
+                <span class="impact-stat-label">Laporan Divalidasi</span>
                 <span class="impact-stat-value">1,284</span>
             </div>
             <div class="impact-stat">
-                <span class="impact-stat-label">Avg Response Time</span>
+                <span class="impact-stat-label">Rata-rata Waktu Respon</span>
                 <span class="impact-stat-value">14m</span>
             </div>
         </div>
@@ -176,7 +176,7 @@
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
             </svg>
-            <span>On Duty: {% if profile.duty_start and profile.duty_end %}{{ profile.duty_start|time:"H:i" }} - {{ profile.duty_end|time:"H:i" }}{% else %}Belum diatur{% endif %}</span>
+            <span>Bertugas: {% if profile.duty_start and profile.duty_end %}{{ profile.duty_start|time:"H:i" }} - {{ profile.duty_end|time:"H:i" }}{% else %}Belum diatur{% endif %}</span>
         </div>
     </div>
 </div>
@@ -186,9 +186,9 @@
     <!-- Recent Actions -->
     <div class="actions-card">
         <div class="actions-header">
-            <h3>Recent Administrative Actions</h3>
+            <h3>Tindakan Administratif Terbaru</h3>
             <a href="#">
-                View Full Audit Trail
+                Lihat Jejak Audit Lengkap
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"/>
                     <polyline points="12 5 19 12 12 19"/>
@@ -200,9 +200,9 @@
             <table class="actions-table">
                 <thead>
                     <tr>
-                        <th>Action</th>
-                        <th>Target Entity</th>
-                        <th>Timestamp</th>
+                        <th>Tindakan</th>
+                        <th>Entitas Target</th>
+                        <th>Waktu</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -246,9 +246,9 @@
     <div class="right-widgets">
         <!-- Daily Verification Quota -->
         <div class="widget-card">
-            <div class="widget-title">Daily Verification Quota</div>
+            <div class="widget-title">Kuota Verifikasi Harian</div>
             <div class="quota-info">
-                <span class="quota-text">41 / 50 Reports Verified</span>
+                <span class="quota-text">41 / 50 Laporan Diverifikasi</span>
                 <span class="quota-pct">82%</span>
             </div>
             <div class="quota-bar">
@@ -265,19 +265,19 @@
                     </svg>
                 </div>
                 <div class="access-info">
-                    <h4>System Access Level</h4>
-                    <p>Tier 3 Root Access enabled. Multi-factor authentication is active for this session.</p>
+                    <h4>Tingkat Akses Sistem</h4>
+                    <p>Akses Root Tier 3 diaktifkan. Autentikasi multi-faktor aktif untuk sesi ini.</p>
                 </div>
             </div>
         </div>
 
         <!-- Internal Memo -->
         <div class="widget-card">
-            <div class="widget-title">Internal Memo</div>
+            <div class="widget-title">Memo Internal</div>
             <div class="memo-quote">
                 <p>{% if profile.memo_text %}"{{ profile.memo_text }}"{% else %}"Belum ada memo internal."{% endif %}</p>
             </div>
-            <div class="memo-time">{% if profile.updated_at %}{{ profile.updated_at|timesince }} ago{% else %}-{% endif %}</div>
+            <div class="memo-time">{% if profile.updated_at %}{{ profile.updated_at|timesince }} yang lalu{% else %}-{% endif %}</div>
         </div>
     </div>
 </div>

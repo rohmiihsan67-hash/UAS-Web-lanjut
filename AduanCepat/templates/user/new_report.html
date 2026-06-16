@@ -1,8 +1,10 @@
 {% extends 'user/base_user.html' %}
-{% block title %}Create New Report{% endblock %}
+{% block title %}Buat Laporan Baru{% endblock %}
 {% block meta_desc %}Buat laporan insiden baru ke pihak berwenang melalui AduanCepat.{% endblock %}
 
 {% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
     .report-layout {
         display: grid;
@@ -106,36 +108,24 @@
     .priority-btn.active-medium { border-color: var(--green-dark); background: var(--green-pale); color: var(--green-dark); }
     .priority-btn.active-high   { border-color: #dc2626; background: #fee2e2; color: #dc2626; }
 
-    /* Map placeholder */
-    .map-placeholder {
+    /* Map container */
+    #report-map-container {
         border-radius: var(--radius-sm);
         overflow: hidden;
         border: 1px solid var(--border);
         position: relative;
-        height: 200px;
-        background: linear-gradient(135deg, #e8ede3 0%, #d4ddc8 100%);
+        height: 240px;
         margin-bottom: 12px;
-        cursor: pointer;
     }
-    .map-placeholder-grid {
-        position: absolute; inset: 0;
-        background-image:
-            linear-gradient(rgba(26,60,26,0.07) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(26,60,26,0.07) 1px, transparent 1px);
-        background-size: 32px 32px;
-    }
-    .map-pin-center {
-        position: absolute; top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px; height: 16px;
-        background: #ef4444;
-        border-radius: 50% 50% 50% 0;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+    #report-leaflet-map {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
     }
     .map-use-location-btn {
         position: absolute;
         bottom: 10px; right: 10px;
+        z-index: 999;
         display: flex; align-items: center; gap: 5px;
         padding: 7px 12px;
         background: white;
@@ -150,6 +140,30 @@
     }
     .map-use-location-btn:hover { background: var(--green-pale); }
     .map-use-location-btn svg { width: 13px; height: 13px; }
+    /* Geocoding suggestion list */
+    .location-suggestions {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-sm);
+        max-height: 180px;
+        overflow-y: auto;
+        position: absolute;
+        left: 0; right: 0;
+        z-index: 1000;
+        display: none;
+    }
+    .location-suggestions .suggestion-item {
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--text-dark);
+        border-bottom: 1px solid var(--border);
+        transition: background 0.1s;
+    }
+    .location-suggestions .suggestion-item:last-child { border-bottom: none; }
+    .location-suggestions .suggestion-item:hover { background: var(--green-pale); }
+    .location-input-wrap { position: relative; }
 
     /* Upload area */
     .upload-area {
@@ -260,91 +274,94 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Create New Report</h1>
-    <p class="page-subtitle">Submit a new incident or concern to your local authorities. Your report helps make the community better.</p>
+    <h1 class="page-title">Buat Laporan Baru</h1>
+    <p class="page-subtitle">Kirimkan insiden atau keluhan baru kepada pihak berwenang setempat. Laporan Anda membantu membuat komunitas lebih baik.</p>
 </div>
 
 <!-- Stepper -->
 <div class="stepper">
     <div class="step">
         <div class="step-circle active">1</div>
-        <span class="step-label active">Details</span>
+        <span class="step-label active">Detail</span>
     </div>
     <div class="step-divider"></div>
     <div class="step">
         <div class="step-circle idle">2</div>
-        <span class="step-label">Location</span>
+        <span class="step-label">Lokasi</span>
     </div>
     <div class="step-divider"></div>
     <div class="step">
         <div class="step-circle idle">3</div>
-        <span class="step-label">Evidence</span>
+        <span class="step-label">Bukti</span>
     </div>
 </div>
 
 <div class="report-layout">
     <!-- Form -->
-    <form method="post" action="{% url 'user_new_report' %}" id="new-report-form">
+    <form method="post" action="{% url 'user_new_report' %}" id="new-report-form" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="priority" id="priority-value" value="medium">
 
         <div class="report-form-card">
             <!-- Report Title -->
             <div class="form-group">
-                <label class="form-label" for="id_title">Report Title</label>
-                <input type="text" name="title" id="id_title" class="form-control" placeholder="Briefly describe the issue (e.g. Broken streetlight or 5m Ave)" required>
+                <label class="form-label" for="id_title">Judul Laporan</label>
+                <input type="text" name="title" id="id_title" class="form-control" placeholder="Jelaskan masalah secara singkat (mis. Lampu jalan mati di Jl. Melati)" required>
             </div>
 
             <!-- Category + Priority -->
             <div style="display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; margin-bottom:16px;">
                 <div class="form-group" style="margin-bottom:0;">
-                    <label class="form-label" for="id_category">Category</label>
+                    <label class="form-label" for="id_category">Kategori</label>
                     <select name="category" id="id_category" class="form-control">
-                        <option value="infrastructure">Infrastructure</option>
-                        <option value="environment">Environment</option>
-                        <option value="public_safety">Public Safety</option>
-                        <option value="other">Other</option>
+                        <option value="infrastructure">Infrastruktur</option>
+                        <option value="environment">Lingkungan</option>
+                        <option value="public_safety">Keselamatan Publik</option>
+                        <option value="other">Lainnya</option>
                     </select>
                 </div>
                 <div>
-                    <div class="form-label" style="margin-bottom:8px;">Priority Level</div>
+                    <div class="form-label" style="margin-bottom:8px;">Tingkat Prioritas</div>
                     <div class="priority-group">
-                        <button type="button" class="priority-btn" id="btn-low"    onclick="setPriority('low')">Low</button>
-                        <button type="button" class="priority-btn active-medium" id="btn-medium" onclick="setPriority('medium')">Medium</button>
-                        <button type="button" class="priority-btn" id="btn-high"   onclick="setPriority('high')">High</button>
+                        <button type="button" class="priority-btn" id="btn-low"    onclick="setPriority('low')">Rendah</button>
+                        <button type="button" class="priority-btn active-medium" id="btn-medium" onclick="setPriority('medium')">Menengah</button>
+                        <button type="button" class="priority-btn" id="btn-high"   onclick="setPriority('high')">Tinggi</button>
                     </div>
                 </div>
             </div>
 
             <!-- Description -->
             <div class="form-group">
-                <label class="form-label" for="id_description">Description</label>
-                <textarea name="description" id="id_description" class="form-control" placeholder="Provide as much detail as possible about the issue..."></textarea>
+                <label class="form-label" for="id_description">Deskripsi</label>
+                <textarea name="description" id="id_description" class="form-control" placeholder="Berikan detail sebanyak mungkin tentang masalah ini..."></textarea>
             </div>
 
             <!-- Incident Location -->
-            <div class="report-section-title">Incident Location</div>
-            <div class="map-placeholder" id="map-area">
-                <div class="map-placeholder-grid"></div>
-                <div class="map-pin-center"></div>
-                <button type="button" class="map-use-location-btn" onclick="useCurrentLocation()">
+            <div class="report-section-title">Lokasi Insiden</div>
+            <!-- Interactive Leaflet Map -->
+            <div id="report-map-container">
+                <div id="report-leaflet-map"></div>
+                <button type="button" class="map-use-location-btn" id="btn-gps" onclick="useCurrentLocation()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
-                    Use Current Location
+                    Gunakan Lokasi Saya
                 </button>
             </div>
-            <div class="form-group" style="margin-bottom:20px;">
-                <input type="text" name="location_address" id="id_location" class="form-control" placeholder="Enter street address or landmark">
+            <div class="form-group location-input-wrap" style="margin-bottom:20px;">
+                <input type="text" name="location_address" id="id_location" class="form-control" placeholder="Ketik nama jalan, kelurahan, atau tempat..." autocomplete="off">
+                <div class="location-suggestions" id="location-suggestions"></div>
+                <input type="hidden" name="latitude" id="id_latitude">
+                <input type="hidden" name="longitude" id="id_longitude">
             </div>
 
             <!-- Evidence -->
-            <div class="report-section-title">Supporting Evidence (Photo/Video)</div>
+            <div class="report-section-title">Bukti Pendukung (Foto/Video)</div>
             <div class="upload-area" id="upload-area">
-                <input type="file" accept="image/*,video/*" multiple id="file-input" onchange="previewFiles(event)">
+                <input type="file" name="photo" accept="image/*" id="file-input" onchange="previewFiles(event)">
                 <div class="upload-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
                 </div>
-                <div class="upload-text">Drag and drop files or <a>browse</a></div>
-                <div class="upload-hint">PNG, JPG or MP4 (Max 20MB)</div>
+                <div class="upload-text">Tarik dan lepas file atau <a>telusuri</a></div>
+                <div class="upload-hint">PNG, JPG atau MP4 (Maks 20MB)</div>
             </div>
             <div class="upload-preview" id="preview-container" style="margin-top:12px;">
                 <div class="preview-thumb add" onclick="document.getElementById('file-input').click()">
@@ -353,10 +370,10 @@
             </div>
 
             <div class="form-actions">
-                <button type="button" class="btn btn-ghost" onclick="history.back()">Save as Draft</button>
+                <button type="button" class="btn btn-ghost" onclick="history.back()">Simpan sebagai Draf</button>
                 <button type="submit" class="btn btn-primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Submit Report
+                    Kirim Laporan
                 </button>
             </div>
         </div>
@@ -367,25 +384,25 @@
         <div class="info-card">
             <div class="info-card-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Verified Reports
+                Laporan Terverifikasi
             </div>
-            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Verified users get faster responses from city officials.</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Pengguna terverifikasi mendapatkan respons yang lebih cepat dari petugas kota.</div>
         </div>
 
         <div class="info-card">
             <div class="info-card-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                Data Privacy
+                Privasi Data
             </div>
-            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Your submission data is encrypted and handled professionally.</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Data laporan Anda dienkripsi dan ditangani secara profesional.</div>
         </div>
 
         <div class="info-card">
             <div class="info-card-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                Status Tracking
+                Pelacakan Status
             </div>
-            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Get real-time notifications about your report's progress.</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5;">Dapatkan notifikasi real-time tentang perkembangan laporan Anda.</div>
         </div>
 
         <div class="info-card" style="background:var(--green-dark); border-color:transparent;">
@@ -423,7 +440,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // ─── Priority buttons ───────────────────────────────────────────────────
     function setPriority(level) {
         document.getElementById('priority-value').value = level;
         document.getElementById('btn-low').className    = 'priority-btn' + (level === 'low'    ? ' active-low'    : '');
@@ -431,18 +451,132 @@
         document.getElementById('btn-high').className   = 'priority-btn' + (level === 'high'   ? ' active-high'   : '');
     }
 
+    // ─── Leaflet Map Setup ──────────────────────────────────────────────────
+    const DEFAULT_LAT = -6.2088;   // Jakarta center
+    const DEFAULT_LNG = 106.8456;
+    const DEFAULT_ZOOM = 12;
+
+    const map = L.map('report-leaflet-map', { zoomControl: true }).setView([DEFAULT_LAT, DEFAULT_LNG], DEFAULT_ZOOM);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    const pinIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+    let marker = null;
+
+    function setPin(lat, lng, label) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng], { icon: pinIcon, draggable: true }).addTo(map);
+        if (label) marker.bindPopup(`<strong>${label}</strong>`).openPopup();
+
+        // Allow dragging pin to fine-tune
+        marker.on('dragend', function(e) {
+            const pos = marker.getLatLng();
+            document.getElementById('id_latitude').value  = pos.lat.toFixed(6);
+            document.getElementById('id_longitude').value = pos.lng.toFixed(6);
+            reverseGeocode(pos.lat, pos.lng);
+        });
+
+        document.getElementById('id_latitude').value  = lat.toFixed ? lat.toFixed(6) : lat;
+        document.getElementById('id_longitude').value = lng.toFixed ? lng.toFixed(6) : lng;
+        map.setView([lat, lng], 16);
+    }
+
+    // Click map → place pin
+    map.on('click', function(e) {
+        setPin(e.latlng.lat, e.latlng.lng, null);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+
+    // ─── Reverse geocode (lat,lng → address) ───────────────────────────────
+    function reverseGeocode(lat, lng) {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('id_location').value = data.display_name;
+                }
+            }).catch(() => {});
+    }
+
+    // ─── Forward geocode (address → lat,lng) with suggestions ──────────────
+    let geocodeTimer = null;
+    const locationInput = document.getElementById('id_location');
+    const suggestionBox = document.getElementById('location-suggestions');
+
+    locationInput.addEventListener('input', function() {
+        clearTimeout(geocodeTimer);
+        const q = this.value.trim();
+        if (q.length < 3) { suggestionBox.style.display = 'none'; return; }
+
+        geocodeTimer = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=id`)
+                .then(r => r.json())
+                .then(results => {
+                    suggestionBox.innerHTML = '';
+                    if (!results.length) { suggestionBox.style.display = 'none'; return; }
+                    results.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.textContent = item.display_name;
+                        div.addEventListener('click', () => {
+                            locationInput.value = item.display_name;
+                            suggestionBox.style.display = 'none';
+                            setPin(parseFloat(item.lat), parseFloat(item.lon), item.display_name);
+                        });
+                        suggestionBox.appendChild(div);
+                    });
+                    suggestionBox.style.display = 'block';
+                }).catch(() => { suggestionBox.style.display = 'none'; });
+        }, 400);
+    });
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.location-input-wrap')) suggestionBox.style.display = 'none';
+    });
+
+    // ─── GPS / Device Location ──────────────────────────────────────────────
     function useCurrentLocation() {
+        const btn = document.getElementById('btn-gps');
+        btn.textContent = 'Mencari lokasi...';
+        btn.disabled = true;
+
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                const lat = pos.coords.latitude.toFixed(6);
-                const lng = pos.coords.longitude.toFixed(6);
-                document.getElementById('id_location').value = `${lat}, ${lng}`;
-            }, function() {
-                alert('Tidak dapat mengakses lokasi. Pastikan izin lokasi diaktifkan.');
-            });
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    setPin(lat, lng, 'Lokasi saya');
+                    reverseGeocode(lat, lng);
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg> Lokasi terdeteksi ✓`;
+                    btn.disabled = false;
+                },
+                function() {
+                    alert('Tidak dapat mengakses lokasi. Pastikan izin lokasi diaktifkan di browser Anda.');
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg> Use My Location`;
+                    btn.disabled = false;
+                }
+            );
+        } else {
+            alert('Browser Anda tidak mendukung fitur GPS.');
+            btn.textContent = 'Use My Location';
+            btn.disabled = false;
         }
     }
 
+    // Invalidate map size after tab show (in case it was hidden)
+    setTimeout(() => map.invalidateSize(), 200);
+
+    // ─── File preview / drag & drop ────────────────────────────────────────
     function previewFiles(event) {
         const container = document.getElementById('preview-container');
         const addBtn = container.querySelector('.preview-thumb.add');
@@ -460,7 +594,6 @@
         });
     }
 
-    // Drag & drop
     const uploadArea = document.getElementById('upload-area');
     uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--green-dark)'; });
     uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
@@ -473,3 +606,4 @@
     });
 </script>
 {% endblock %}
+

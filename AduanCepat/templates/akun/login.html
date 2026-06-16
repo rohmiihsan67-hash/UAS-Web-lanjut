@@ -440,7 +440,7 @@
             </svg>
         </div>
         <h1>AduanCepat</h1>
-        <p>Institutional Transparency &amp; Citizen Reporting</p>
+        <p>Transparansi Institusi &amp; Pelaporan Warga</p>
     </div>
 
     <!-- ══ Card ══ -->
@@ -469,7 +469,7 @@
 
             <!-- Email / Username -->
             <div>
-                <label class="field-label" for="id_username">Email Address</label>
+                <label class="field-label" for="id_username">Alamat Email</label>
                 <div class="input-icon-wrap" style="margin-top:6px;">
                     <span class="input-icon">
                         <!-- Envelope icon -->
@@ -487,8 +487,8 @@
             <!-- Password -->
             <div>
                 <div class="field-label-row">
-                    <label class="field-label" for="id_password">Password</label>
-                    <a href="{% url 'forgot_password' %}" class="forgot-link">Forgot password?</a>
+                    <label class="field-label" for="id_password">Kata Sandi</label>
+                    <a href="{% url 'forgot_password' %}" class="forgot-link">Lupa kata sandi?</a>
                 </div>
                 <div class="input-icon-wrap" style="margin-top:6px;">
                     <span class="input-icon">
@@ -501,7 +501,7 @@
                     </span>
                     <input class="field-input" type="password" id="id_password" name="password" placeholder="••••••••"
                         autocomplete="current-password" required>
-                    <button type="button" class="eye-btn" id="toggle-eye" aria-label="Toggle password visibility"
+                    <button type="button" class="eye-btn" id="toggle-eye" aria-label="Alihkan visibilitas kata sandi"
                         onclick="togglePassword()">
                         <!-- Eye icon -->
                         <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -516,12 +516,12 @@
             <!-- Remember me -->
             <div class="remember-wrap">
                 <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Remember this device for 30 days</label>
+                <label for="remember">Ingat perangkat ini selama 30 hari</label>
             </div>
 
             <!-- Sign In button -->
             <button type="submit" class="btn-signin" id="btn-signin">
-                Sign In
+                Masuk
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -532,7 +532,7 @@
         </form>
 
         <!-- OR divider -->
-        <div class="divider"><span>Or continue with</span></div>
+        <div class="divider"><span>Atau lanjutkan dengan</span></div>
 
         <!-- Google button → allauth OAuth endpoint -->
         <a href="/accounts/google/login/" class="btn-google" id="btn-google">
@@ -546,14 +546,14 @@
                 <path fill="#1976D2"
                     d="M43.6 20.5H42V20H24v8h11.3c-.9 2.4-2.5 4.5-4.5 5.9l.1.1 6.2 5.2C37 38.5 44 33 44 24c0-1.2-.1-2.3-.4-3.5z" />
             </svg>
-            Continue with Google
+            Lanjutkan dengan Google
         </a>
 
         <hr class="card-sep">
 
         <!-- Register link -->
         <p class="register-link">
-            Don't have an account? <a href="{% url 'register' %}">Create a report account</a>
+            Belum punya akun? <a href="{% url 'register' %}">Buat akun laporan</a>
         </p>
 
     </div><!-- /.card -->
@@ -561,9 +561,9 @@
 
     <!-- Footer links -->
     <div class="footer-links">
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Help Center</a>
+        <a href="#">Kebijakan Privasi</a>
+        <a href="#">Syarat Layanan</a>
+        <a href="#">Pusat Bantuan</a>
     </div>
 
     <script>
