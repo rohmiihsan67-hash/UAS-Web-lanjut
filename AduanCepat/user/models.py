@@ -13,6 +13,16 @@ class UserProfile(models.Model):
     trust_score = models.PositiveIntegerField('Community Trust Score', default=85)
     language = models.CharField('Language', max_length=10, default='id')
     timezone = models.CharField('Timezone', max_length=50, default='Asia/Jakarta')
+    # Notifikasi
+    notif_email = models.BooleanField('Notifikasi Email', default=True)
+    notif_push  = models.BooleanField('Notifikasi Push', default=True)
+    notif_sms   = models.BooleanField('Notifikasi SMS', default=False)
+    # Privasi
+    privacy_mode = models.CharField('Mode Privasi', max_length=20, default='transparent',
+                                    choices=[('transparent', 'Transparansi Penuh'), ('anonymous', 'Pelaporan Rahasia')])
+    # Keamanan
+    mfa_enabled = models.BooleanField('Autentikasi Dua Faktor', default=False)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

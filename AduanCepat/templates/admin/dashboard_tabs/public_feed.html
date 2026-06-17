@@ -1,4 +1,24 @@
-<div class="actions-card" style="text-align: center; padding: 60px 20px;">
-    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--green-dark);">Umpan Publik</h3>
-    <p style="color: var(--text-muted); margin-top: 10px;">Pantau umpan laporan publik dan komentar secara real-time.</p>
+<div class="actions-card" style="padding: 24px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-dark); margin-bottom: 20px;">Umpan Laporan Publik</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+        {% for report in all_reports %}
+        <div style="border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #fff;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-dark);">{{ report.title }}</h4>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Dilaporkan oleh <strong>{{ report.user.username }}</strong> • {{ report.created_at|timesince }} yang lalu</div>
+                </div>
+                <span class="badge-report-tag badge-tag-{{ report.status_color }}">{{ report.get_status_display }}</span>
+            </div>
+            {% if report.description %}
+            <p style="font-size: 0.85rem; color: var(--text-mid); line-height: 1.5;">{{ report.description|truncatechars:150 }}</p>
+            {% endif %}
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                📍 {{ report.location_address|default:"Lokasi tidak diketahui" }}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">Belum ada laporan publik.</div>
+        {% endfor %}
+    </div>
 </div>

@@ -1,4 +1,111 @@
-<div class="actions-card" style="text-align: center; padding: 60px 20px;">
-    <h3>Log & Kontrol Keamanan</h3>
-    <p style="color: var(--text-muted); margin-top: 10px;">Pantau percobaan login root, log IP, dan jejak audit sistem.</p>
+<div class="actions-card" style="padding: 30px; border-radius: 12px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;">
+    <h3 style="margin-bottom: 20px; color: var(--green-dark);">Blokir Alamat IP</h3>
+    <form action="{% url 'block_ip' %}" method="POST" style="display: flex; gap: 15px; margin-bottom: 30px;">
+        {% csrf_token %}
+        <input type="text" name="ip_address" placeholder="Contoh: 192.168.1.1" required style="flex: 1; padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif;">
+        <input type="text" name="reason" placeholder="Alasan pemblokiran (Opsional)" style="flex: 2; padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Inter', sans-serif;">
+        <button type="submit" style="padding: 10px 20px; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;">Blokir IP</button>
+    </form>
+
+    <h3 style="margin-bottom: 20px; color: var(--green-dark);">Daftar IP yang Diblokir</h3>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: 'Inter', sans-serif;">
+            <thead>
+                <tr style="border-bottom: 2px solid #f1f5f9;">
+                    <th style="padding: 12px; color: var(--text-muted); font-weight: 600;">Alamat IP</th>
+                    <th style="padding: 12px; color: var(--text-muted); font-weight: 600;">Alasan</th>
+                    <th style="padding: 12px; color: var(--text-muted); font-weight: 600;">Tanggal Diblokir</th>
+                    <th style="padding: 12px; color: var(--text-muted); font-weight: 600; text-align: right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ip in blocked_ips %}
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-weight: 500;">{{ ip.ip_address }}</td>
+                    <td style="padding: 12px; color: var(--text-muted);">{{ ip.reason|default:"-" }}</td>
+                    <td style="padding: 12px; color: var(--text-muted);">{{ ip.created_at|date:"d M Y H:i" }}</td>
+                    <td style="padding: 12px; text-align: right;">
+                        <form action="{% url 'unblock_ip' ip.id %}" method="POST" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="padding: 6px 12px; background-color: var(--green-light); color: var(--green-dark); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;" onclick="return confirm('Apakah Anda yakin ingin membuka blokir IP ini?')">Buka Blokir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 30px; text-align: center; color: var(--text-muted);">Belum ada IP yang diblokir.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Log Akses IP -->
+<div class="actions-card" style="padding: 30px; border-radius: 12px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="color: var(--green-dark); margin: 0;">Log Akses IP Pengunjung</h3>
+        <span style="font-size: 12px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; color: var(--text-muted);">{{ security_logs|length }} entri terbaru</span>
+    </div>
+
+    <!-- Filter Status -->
+    <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+        <span style="font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #fee2e2; color: #b91c1c; font-weight: 600;">🚫 Diblokir</span>
+        <span style="font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #fef3c7; color: #92400e; font-weight: 600;">⚠️ Login Gagal</span>
+        <span style="font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #dcfce7; color: #14532d; font-weight: 600;">✅ Login Berhasil</span>
+        <span style="font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #f1f5f9; color: #475569; font-weight: 600;">📄 Akses Biasa</span>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; font-family: 'Inter', sans-serif;">
+            <thead>
+                <tr style="border-bottom: 2px solid #f1f5f9; background: #f8fafc;">
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Waktu</th>
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Alamat IP</th>
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Halaman</th>
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Metode</th>
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Status</th>
+                    <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Pengguna</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in security_logs %}
+                <tr style="border-bottom: 1px solid #f1f5f9; {% if log.status == 'blocked' %}background: #fff5f5;{% elif log.status == 'login_failed' %}background: #fffbeb;{% endif %}">
+                    <td style="padding: 10px 12px; color: var(--text-muted); white-space: nowrap;">{{ log.created_at|date:"d M H:i:s" }}</td>
+                    <td style="padding: 10px 12px; font-weight: 600; font-family: monospace;">{{ log.ip_address }}</td>
+                    <td style="padding: 10px 12px; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <code style="font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ log.path|truncatechars:45 }}</code>
+                    </td>
+                    <td style="padding: 10px 12px;">
+                        <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; 
+                            {% if log.method == 'POST' %}background:#eff6ff; color:#1d4ed8;
+                            {% else %}background:#f1f5f9; color:#475569;{% endif %}">
+                            {{ log.method }}
+                        </span>
+                    </td>
+                    <td style="padding: 10px 12px;">
+                        {% if log.status == 'blocked' %}
+                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #fee2e2; color: #b91c1c; font-weight: 600;">🚫 Diblokir</span>
+                        {% elif log.status == 'login_failed' %}
+                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #fef3c7; color: #92400e; font-weight: 600;">⚠️ Login Gagal</span>
+                        {% elif log.status == 'login_success' %}
+                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #dcfce7; color: #14532d; font-weight: 600;">✅ Berhasil</span>
+                        {% else %}
+                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #f1f5f9; color: #475569; font-weight: 600;">📄 Izin</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px 12px; color: var(--text-muted);">
+                        {% if log.user %}{{ log.user.username }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                        Belum ada log akses. Log akan muncul secara otomatis setelah ada pengunjung.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>

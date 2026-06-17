@@ -337,7 +337,9 @@
         <div class="form-card">
             <div class="activity-header">
                 <h2 class="activity-title">Aktivitas Terkini</h2>
+                {% if not request.user.is_staff %}
                 <a href="{% url 'user_my_submissions' %}" class="view-history-link">Lihat Semua Riwayat</a>
+                {% endif %}
             </div>
             <div class="activity-list">
                 {% for s in recent_activity %}

@@ -31,7 +31,7 @@ def admin_dashboard_view(request):
         messages.error(request, 'Anda tidak memiliki akses ke halaman admin.')
         return redirect('/')
 
-    from .models import AdminProfile
+    from .models import AdminProfile, BlockedIP, SiteSetting, SecurityLog
     from .forms import AdminProfileForm
 
     # Get or create profile for this admin
@@ -75,6 +75,73 @@ def admin_dashboard_view(request):
 
     staff_members = User.objects.filter(is_staff=True).order_by('-date_joined')
 
+    # Calculate real 7-day chart data
+    from django.utils import timezone
+    from datetime import timedelta
+    today = timezone.localdate()
+    
+    # --- 7 Days Data ---
+    last_7_days = [(today - timedelta(days=i)) for i in range(6, -1, -1)]
+    ind_days = {'Mon': 'Sen', 'Tue': 'Sel', 'Wed': 'Rab', 'Thu': 'Kam', 'Fri': 'Jum', 'Sat': 'Sab', 'Sun': 'Min'}
+    chart_7_labels = [ind_days.get(d.strftime('%a'), d.strftime('%a')) for d in last_7_days]
+    
+    chart_7_data = [Submission.objects.filter(created_at__date=d).count() for d in last_7_days]
+    x_coords_7 = [40, 130, 220, 310, 400, 490, 580]
+    max_val_7 = max(chart_7_data) if chart_7_data and max(chart_7_data) > 0 else 1
+    
+    points_7 = []
+    nodes_7 = []
+    for idx, val in enumerate(chart_7_data):
+        x = x_coords_7[idx]
+        y = 170 - (val / max_val_7 * 130)
+        points_7.append(f"{x} {y}")
+        nodes_7.append({'x': x, 'y': y, 'label': chart_7_labels[idx], 'val': val})
+        
+    chart_7_path_str = " L ".join(points_7)
+    chart_7_path = f"M {chart_7_path_str}" if points_7 else ""
+    chart_7_area = f"{chart_7_path} L 580 170 L 40 170 Z" if points_7 else ""
+
+    # --- 30 Days Data ---
+    last_30_days = [(today - timedelta(days=i)) for i in range(29, -1, -1)]
+    chart_30_labels = [d.strftime('%d/%m') for d in last_30_days]
+    chart_30_data = [Submission.objects.filter(created_at__date=d).count() for d in last_30_days]
+    
+    # 30 points mapped from x=40 to x=580.
+    # Total width = 540, split into 29 intervals.
+    x_step = 540 / 29.0
+    x_coords_30 = [40 + (i * x_step) for i in range(30)]
+    max_val_30 = max(chart_30_data) if chart_30_data and max(chart_30_data) > 0 else 1
+    
+    points_30 = []
+    nodes_30 = []
+    for idx, val in enumerate(chart_30_data):
+        x = x_coords_30[idx]
+        y = 170 - (val / max_val_30 * 130)
+        points_30.append(f"{x} {y}")
+        show_label = (idx % 6 == 0) or (idx == 29) # Show label every ~6 days
+        nodes_30.append({'x': x, 'y': y, 'label': chart_30_labels[idx] if show_label else '', 'val': val})
+        
+    chart_30_path_str = " L ".join(points_30)
+    chart_30_path = f"M {chart_30_path_str}" if points_30 else ""
+    chart_30_area = f"{chart_30_path} L 580 170 L 40 170 Z" if points_30 else ""
+
+    import json
+    incidents_list = []
+    for r in all_reports:
+        lat = r.latitude if r.latitude else -6.2088 # Default Jakarta
+        lng = r.longitude if r.longitude else 106.8456
+        incidents_list.append({
+            'id': r.id,
+            'lat': float(lat),
+            'lng': float(lng),
+            'status': r.status,
+            'title': r.title,
+            'loc': r.location_address or f"Lokasi: {lat}, {lng}",
+            'desc': r.description or '',
+            'active': False
+        })
+    incidents_json = json.dumps(incidents_list)
+
     context = {
         'profile': profile,
         'form': form,
@@ -92,6 +159,16 @@ def admin_dashboard_view(request):
         'safety_count':  safety_count,  'safety_pct':  pct(safety_count),
         'other_count':   other_count,   'other_pct':   pct(other_count),
         'staff_members': staff_members,
+        'blocked_ips':   BlockedIP.objects.all().order_by('-created_at'),
+        'site_settings': SiteSetting.objects.first(),
+        'security_logs': SecurityLog.objects.all()[:100],
+        'chart_7_path': chart_7_path,
+        'chart_7_area': chart_7_area,
+        'chart_7_nodes': nodes_7,
+        'chart_30_path': chart_30_path,
+        'chart_30_area': chart_30_area,
+        'chart_30_nodes': nodes_30,
+        'incidents_json': incidents_json,
     }
     return render(request, 'admin/admin_dashboard.html', context)
 
@@ -312,4 +389,74 @@ Tim AduanCepat"""
 def reset_success_view(request):
     return render(request, 'akun/reset_success.html')
 
+@login_required(login_url='/akun/login/')
+def block_ip(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Akses ditolak.')
+        return redirect('/')
+    
+    if request.method == 'POST':
+        ip = request.POST.get('ip_address')
+        reason = request.POST.get('reason', '')
+        if ip:
+            from .models import BlockedIP
+            BlockedIP.objects.get_or_create(ip_address=ip, defaults={'reason': reason})
+            messages.success(request, f'IP {ip} berhasil diblokir.')
+        else:
+            messages.error(request, 'Alamat IP tidak valid.')
+    return redirect('/akun/admin-dashboard/?tab=security')
 
+@login_required(login_url='/akun/login/')
+def unblock_ip(request, ip_id):
+    if not request.user.is_staff:
+        messages.error(request, 'Akses ditolak.')
+        return redirect('/')
+        
+    from .models import BlockedIP
+    try:
+        blocked_ip = BlockedIP.objects.get(id=ip_id)
+        ip_addr = blocked_ip.ip_address
+        blocked_ip.delete()
+        messages.success(request, f'Blokir untuk IP {ip_addr} berhasil dibuka.')
+    except BlockedIP.DoesNotExist:
+        messages.error(request, 'Data IP tidak ditemukan.')
+        
+    return redirect('/akun/admin-dashboard/?tab=security')
+
+@login_required(login_url='/akun/login/')
+def save_settings(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Akses ditolak.')
+        return redirect('/')
+        
+    if request.method == 'POST':
+        from .models import SiteSetting
+        setting, created = SiteSetting.objects.get_or_create(id=1)
+        
+        setting.org_name = request.POST.get('org_name', setting.org_name)
+        setting.domain = request.POST.get('domain', setting.domain)
+        setting.language = request.POST.get('language', setting.language)
+        setting.timezone = request.POST.get('timezone', setting.timezone)
+        
+        setting.mod_auto = request.POST.get('mod_auto') == 'on'
+        setting.notif_email = request.POST.get('notif_email') == 'on'
+        setting.public_analytic = request.POST.get('public_analytic') == 'on'
+        setting.mfa_required = request.POST.get('mfa_required') == 'on'
+        
+        setting.save()
+        messages.success(request, 'Pengaturan berhasil disimpan.')
+        
+    return redirect('/akun/admin-dashboard/?tab=settings')
+
+@login_required(login_url='/akun/login/')
+def clear_cache(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Akses ditolak.')
+        return redirect('/')
+        
+    if request.method == 'POST':
+        from django.core.cache import cache
+        cache.clear()
+        messages.success(request, 'Cache sistem berhasil dibersihkan.')
+        
+    return redirect('/akun/admin-dashboard/?tab=settings')

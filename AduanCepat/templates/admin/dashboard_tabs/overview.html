@@ -85,15 +85,15 @@
                     <h3>Tren Laporan</h3>
                     <p>Volume laporan insiden mingguan</p>
                 </div>
-                <select class="select-filter-sm">
-                    <option>7 Hari Terakhir</option>
-                    <option>30 Hari Terakhir</option>
+                <select class="select-filter-sm" onchange="toggleChartDays(this.value)">
+                    <option value="7">7 Hari Terakhir</option>
+                    <option value="30">30 Hari Terakhir</option>
                 </select>
             </div>
             
-            <div class="chart-container-svg">
-                <!-- Beautiful SVG Line Chart with Grid Lines -->
-                <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none">
+            <div class="chart-container-svg" id="chart-7">
+                <!-- Beautiful SVG Line Chart with Grid Lines (7 Days) -->
+                <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none" style="padding-right: 15px; padding-top: 10px;">
                     <!-- Grid Lines -->
                     <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
                     <line x1="40" y1="70" x2="580" y2="70" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
@@ -102,33 +102,52 @@
                     
                     <!-- Chart Line and Shadow Gradient -->
                     <defs>
-                        <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="chart-grad-7" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stop-color="var(--green-light)" stop-opacity="0.25" />
                             <stop offset="100%" stop-color="var(--green-light)" stop-opacity="0.0" />
                         </linearGradient>
                     </defs>
                     <!-- Area Path -->
-                    <path d="M 40 170 L 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50 L 580 170 Z" fill="url(#chart-grad)" />
+                    <path d="{{ chart_7_area }}" fill="url(#chart-grad-7)" />
                     <!-- Line Path -->
-                    <path d="M 40 140 L 130 90 L 220 120 L 310 60 L 400 80 L 490 40 L 580 50" fill="none" stroke="var(--green-mid)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="{{ chart_7_path }}" fill="none" stroke="var(--green-mid)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                     
-                    <!-- Data Nodes (Dots) -->
-                    <circle cx="40" cy="140" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="130" cy="90" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="220" cy="120" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="310" cy="60" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="400" cy="80" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="490" cy="40" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
-                    <circle cx="580" cy="50" r="4.5" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <!-- Data Nodes (Dots) and X Axis Labels -->
+                    {% for node in chart_7_nodes %}
+                    <circle cx="{{ node.x }}" cy="{{ node.y }}" r="4" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2.5" />
+                    <text x="{{ node.x }}" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">{{ node.label }}</text>
+                    {% endfor %}
+                </svg>
+            </div>
+            
+            <div class="chart-container-svg" id="chart-30" style="display: none;">
+                <!-- Beautiful SVG Line Chart with Grid Lines (30 Days) -->
+                <svg width="100%" height="100%" viewBox="0 0 600 220" preserveAspectRatio="none" style="padding-right: 15px; padding-top: 10px;">
+                    <!-- Grid Lines -->
+                    <line x1="40" y1="20" x2="580" y2="20" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="70" x2="580" y2="70" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="120" x2="580" y2="120" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
+                    <line x1="40" y1="170" x2="580" y2="170" stroke="rgba(0,0,0,0.04)" stroke-width="1" />
                     
-                    <!-- X Axis Labels -->
-                    <text x="40" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sen</text>
-                    <text x="130" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sel</text>
-                    <text x="220" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Rab</text>
-                    <text x="310" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Kam</text>
-                    <text x="400" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Jum</text>
-                    <text x="490" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Sab</text>
-                    <text x="580" y="195" fill="var(--text-muted)" font-size="10.5" font-weight="600" text-anchor="middle">Min</text>
+                    <!-- Chart Line and Shadow Gradient -->
+                    <defs>
+                        <linearGradient id="chart-grad-30" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="var(--green-light)" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="var(--green-light)" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Area Path -->
+                    <path d="{{ chart_30_area }}" fill="url(#chart-grad-30)" />
+                    <!-- Line Path -->
+                    <path d="{{ chart_30_path }}" fill="none" stroke="var(--green-mid)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    
+                    <!-- Data Nodes (Dots) and X Axis Labels -->
+                    {% for node in chart_30_nodes %}
+                    <circle cx="{{ node.x }}" cy="{{ node.y }}" r="3" fill="var(--white)" stroke="var(--green-mid)" stroke-width="2" />
+                    {% if node.label %}
+                    <text x="{{ node.x }}" y="195" fill="var(--text-muted)" font-size="10" font-weight="500" text-anchor="middle">{{ node.label }}</text>
+                    {% endif %}
+                    {% endfor %}
                 </svg>
             </div>
         </div>
@@ -137,7 +156,7 @@
         <div class="recent-reports-card">
             <div class="trends-header">
                 <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark);">Laporan Terbaru</h3>
-                <a href="#" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">Lihat Semua</a>
+                <a href="#" onclick="event.preventDefault(); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelector('[data-tab=reports]') && (document.querySelector('[data-tab=reports]').classList.add('active'), document.getElementById('tab-reports') && document.getElementById('tab-reports').classList.add('active'))" style="font-size: 0.85rem; font-weight: 600; color: var(--green-mid); text-decoration: none;">Lihat Semua</a>
             </div>
             
             <div class="recent-reports-list" id="recent-reports-list-container">

@@ -245,8 +245,16 @@
                 <div class="settings-row-sub">Tambahkan lapisan keamanan ekstra pada akun institusional Anda.</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-                <span class="settings-row-badge inactive">TIDAK AKTIF</span>
-                <button class="link-action">Kelola</button>
+                {% if profile.mfa_enabled %}
+                    <span class="settings-row-badge active">AKTIF</span>
+                {% else %}
+                    <span class="settings-row-badge inactive">TIDAK AKTIF</span>
+                {% endif %}
+                <form method="post" action="{% url 'user_settings' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_mfa">
+                    <button type="submit" class="link-action">{% if profile.mfa_enabled %}Nonaktifkan{% else %}Aktifkan{% endif %}</button>
+                </form>
             </div>
         </div>
 
@@ -255,7 +263,7 @@
                 <div class="settings-row-label">Email Utama</div>
                 <div class="settings-row-sub">{{ request.user.email|default:"Belum diset" }}</div>
             </div>
-            <button class="link-action">Ubah Email</button>
+            <button type="button" class="link-action" onclick="document.getElementById('email-modal').classList.add('open')">Ubah Email</button>
         </div>
 
         <div class="settings-row">
@@ -263,9 +271,10 @@
                 <div class="settings-row-label">Telepon Pemulihan</div>
                 <div class="settings-row-sub">{{ profile.phone|default:"Belum diset" }}</div>
             </div>
-            <button class="link-action">Ubah Telepon</button>
+            <button type="button" class="link-action" onclick="document.getElementById('phone-modal').classList.add('open')">Ubah Telepon</button>
         </div>
     </div>
+
 
     <!-- Language & Regional -->
     <div style="display:flex; flex-direction:column; gap:16px;">
@@ -316,51 +325,83 @@
 
     <!-- Notification Channels -->
     <div class="settings-card">
-        <div class="settings-card-header">
-            <div class="settings-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <form method="post" action="{% url 'user_settings' %}" id="notif-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_notifications">
+            <div class="settings-card-header">
+                <div class="settings-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                </div>
+                <div>
+                    <div class="settings-card-title">Saluran Notifikasi</div>
+                    <div class="settings-card-sub"><span style="color:var(--text-muted); font-size:0.75rem;">Otomatis tersimpan</span></div>
+                </div>
             </div>
-            <div>
-                <div class="settings-card-title">Saluran Notifikasi</div>
-                <div class="settings-card-sub"><a href="#" class="link-action" style="text-transform:none; letter-spacing:0; font-size:0.75rem;">Tandai semua sudah dibaca</a></div>
+            <div class="notif-section">
+                <div class="notif-channel">
+                    <div class="notif-channel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="notif-channel-name">Laporan Email</div>
+                        <div class="notif-channel-desc">Ringkasan harian dan peringatan mendesak dikirim ke email Anda.</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" name="notif_email" onchange="saveNotifications()" {% if profile.notif_email %}checked{% endif %}><span class="toggle-slider"></span></label>
+                </div>
+                <div class="notif-channel">
+                    <div class="notif-channel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="notif-channel-name">Notifikasi Push</div>
+                        <div class="notif-channel-desc">Notifikasi real-time di perangkat mobile Anda.</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" name="notif_push" onchange="saveNotifications()" {% if profile.notif_push %}checked{% endif %}><span class="toggle-slider"></span></label>
+                </div>
+                <div class="notif-channel">
+                    <div class="notif-channel-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a2 2 0 012-2.18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 14a16 16 0 006.06 6.06l.27-.26a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 22z"/></svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div class="notif-channel-name">Peringatan SMS</div>
+                        <div class="notif-channel-desc">Hanya teks darurat. Biaya kredit berlaku.</div>
+                    </div>
+                    <label class="toggle-switch"><input type="checkbox" name="notif_sms" onchange="saveNotifications()" {% if profile.notif_sms %}checked{% endif %}><span class="toggle-slider"></span></label>
+                </div>
             </div>
-        </div>
-        <div class="notif-section">
-            <div class="notif-channel">
-                <div class="notif-channel-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                </div>
-                <div style="flex:1;">
-                    <div class="notif-channel-name">Laporan Email</div>
-                    <div class="notif-channel-desc">Ringkasan harian dan peringatan mendesak dikirim ke email Anda.</div>
-                </div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-            </div>
-            <div class="notif-channel">
-                <div class="notif-channel-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                </div>
-                <div style="flex:1;">
-                    <div class="notif-channel-name">Notifikasi Push</div>
-                    <div class="notif-channel-desc">Notifikasi real-time di perangkat mobile Anda.</div>
-                </div>
-                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-            </div>
-            <div class="notif-channel">
-                <div class="notif-channel-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a2 2 0 012-2.18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 14a16 16 0 006.06 6.06l.27-.26a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 22z"/></svg>
-                </div>
-                <div style="flex:1;">
-                    <div class="notif-channel-name">Peringatan SMS</div>
-                    <div class="notif-channel-desc">Hanya teks darurat. Biaya kredit berlaku.</div>
-                </div>
-                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
-            </div>
-        </div>
+        </form>
     </div>
 
+    <script>
+        function saveNotifications() {
+            const form = document.getElementById('notif-form');
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    const statusText = form.querySelector('.settings-card-sub span');
+                    statusText.textContent = 'Tersimpan!';
+                    statusText.style.color = '#16a34a';
+                    setTimeout(() => {
+                        statusText.textContent = 'Otomatis tersimpan';
+                        statusText.style.color = 'var(--text-muted)';
+                    }, 2000);
+                }
+            });
+        }
+    </script>
+
+
+
     <!-- Privacy & Transparency -->
-    <div class="settings-card">
+    <form method="post" action="{% url 'user_settings' %}" class="settings-card">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_privacy">
         <div class="settings-card-header">
             <div class="settings-card-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -373,23 +414,70 @@
         <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.55; margin-bottom:16px;">
             Kontrol bagaimana identitas pelaporan Anda dibagikan kepada pihak berwenang. Pilih antara Transparansi Penuh untuk berbagi real-time atau Pelaporan Rahasia untuk isu komunitas yang sensitif.
         </p>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+            <select name="privacy_mode" class="form-control">
+                <option value="transparent" {% if profile.privacy_mode == 'transparent' %}selected{% endif %}>Transparansi Penuh (Identitas terlihat)</option>
+                <option value="anonymous" {% if profile.privacy_mode == 'anonymous' %}selected{% endif %}>Pelaporan Rahasia (Identitas disembunyikan)</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 20px;">
             <a href="#" class="btn btn-outline" style="font-size:0.8rem; padding:8px 14px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Kebijakan Privasi
             </a>
-            <a href="#" class="btn btn-primary" style="font-size:0.8rem; padding:8px 14px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                Atur Kontrol
-            </a>
         </div>
         <div class="settings-footer-bar">
-            <div class="last-sync">Sinkronisasi terakhir: Hari ini pukul 09:42</div>
+            <div class="last-sync">Sinkronisasi terakhir: Hari ini pukul {% now "H:i" %}</div>
             <div style="display:flex; gap:8px;">
-                <button class="btn btn-ghost" style="font-size:0.8rem; padding:7px 14px;">Batalkan</button>
-                <button class="btn btn-primary" style="font-size:0.8rem; padding:7px 14px;">Simpan Pengaturan</button>
+                <button type="reset" class="btn btn-ghost" style="font-size:0.8rem; padding:7px 14px;">Batalkan</button>
+                <button type="submit" class="btn btn-primary" style="font-size:0.8rem; padding:7px 14px;">Simpan Pengaturan</button>
             </div>
         </div>
+    </form>
+</div>
+
+
+<!-- Account Security Forms -->
+<div class="modal-overlay" id="email-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box">
+        <div class="modal-title">Ubah Email Utama</div>
+        <div class="modal-sub">Masukkan email baru dan konfirmasi password Anda.</div>
+        <form method="post" action="{% url 'user_settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_email">
+            <div class="form-group">
+                <label class="form-label">Email Baru</label>
+                <input type="email" name="new_email" class="form-control" required placeholder="email@contoh.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Konfirmasi Password</label>
+                <input type="password" name="confirm_password" class="form-control" required placeholder="••••••••">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('email-modal').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Email</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="phone-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box">
+        <div class="modal-title">Ubah Telepon Pemulihan</div>
+        <form method="post" action="{% url 'user_settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_phone">
+            <div class="form-group">
+                <label class="form-label">Nomor Telepon Baru</label>
+                <input type="text" name="new_phone" class="form-control" required placeholder="08xxxxxxxxxx" value="{{ profile.phone }}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('phone-modal').classList.remove('open')">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Telepon</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -416,4 +504,5 @@
         </form>
     </div>
 </div>
+
 {% endblock %}

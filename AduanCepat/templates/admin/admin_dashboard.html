@@ -1607,6 +1607,111 @@
             display: block;
         }
 
+        /* Pusat Bantuan modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s, visibility 0.2s;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.open .modal-box {
+            transform: translateY(0);
+        }
+
+        /* ═══════════════════════════
+           NOTIFICATIONS
+        ═══════════════════════════ */
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            z-index: 1000;
+            margin-top: 10px;
+            overflow: hidden;
+            text-align: left;
+        }
+        .notif-dropdown.show { display: block; }
+        .notif-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #0f172a;
+            background: #f8fafc;
+        }
+        .notif-body {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .notif-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 12px;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .notif-item:hover {
+            background: #f8fafc;
+        }
+        .notif-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #dcfce7;
+            color: #166534;
+        }
+        .notif-content {
+            flex: 1;
+        }
+        .notif-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+        .notif-time {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
         /* ═══════════════════════════
            INCIDENT MAP LAYOUT & WIDGETS
            ═══════════════════════════ */
@@ -1938,16 +2043,7 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <a href="#" class="btn-submit-report">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="16" />
-                    <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-                Buat Laporan
-            </a>
-            <a href="#">
+            <a href="#" role="button" onclick="event.preventDefault(); openHelpModal(); return false;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10" />
@@ -1974,9 +2070,13 @@
         <header class="topbar">
             <div style="display: flex; align-items: center; height: 100%;">
                 <h1 class="topbar-title" id="page-title">Dasbor</h1>
-
+                <nav class="topbar-tabs" id="dashboard-subtabs">
+                    <a href="#" class="topbar-tab-link active" data-subtab="overview">Ringkasan</a>
+                    <a href="#" class="topbar-tab-link" data-subtab="incident-map">Peta Insiden</a>
+                    <a href="#" class="topbar-tab-link" data-subtab="public-feed">Laporan Publik</a>
+                </nav>
             </div>
-            <div class="topbar-right">
+            <div class="topbar-right" style="position: relative;">
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -1985,15 +2085,42 @@
                     </svg>
                     <input type="text" id="dashboard-search-input" placeholder="Cari laporan...">
                 </div>
-                <button class="topbar-icon-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                    <span class="notif-dot"></span>
-                </button>
-                <button class="topbar-icon-btn" style="margin-right: 4px;">
+                <div style="position: relative;">
+                    <button class="topbar-icon-btn" onclick="document.getElementById('admin-notif-dropdown').classList.toggle('show')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <span class="notif-dot"></span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="admin-notif-dropdown" class="notif-dropdown">
+                        <div class="notif-header">Notifikasi Sistem</div>
+                        <div class="notif-body">
+                            {% for report in recent_reports|slice:":3" %}
+                            <a href="#" class="notif-item" onclick="switchTab('reports-tab')">
+                                <div class="notif-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="notif-content">
+                                    <div class="notif-title">Laporan Baru: {{ report.title|truncatechars:30 }}</div>
+                                    <div class="notif-time">{{ report.created_at|timesince }} yang lalu</div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Belum ada notifikasi</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <button class="topbar-icon-btn" style="margin-right: 4px;" onclick="switchTab('settings-tab')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3" />
@@ -2002,7 +2129,7 @@
                     </svg>
                 </button>
                 <div class="topbar-avatar" onclick="switchTab('profile-tab')">
-                    {{ user.first_name|default:user.username|truncatechars:2|upper }}
+                    {{ user.first_name|default:user.username|slice:":2"|upper }}
                 </div>
             </div>
         </header>
@@ -2039,11 +2166,6 @@
                     {% include 'admin/dashboard_tabs/public_feed.html' %}
                 </div>
 
-                <!-- Sub Tab 4: My Submissions -->
-                <div id="my-submissions-subtab" class="subtab-pane">
-                    {% include 'admin/dashboard_tabs/my_submissions.html' %}
-                </div>
-
             </div> <!-- /#dashboard-tab -->
 
             <!-- ═══════ TAB 2: PROFILE ═══════ -->
@@ -2067,20 +2189,66 @@
         </div><!-- /.content -->
     </main>
 
+<!-- Pusat Bantuan Modal -->
+<div class="modal-overlay" id="help-modal" onclick="if(event.target===this) closeHelpModal()">
+    <div class="modal-box">
+        <div style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: text-bottom;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Pusat Bantuan Admin
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px; line-height: 1.4;">Bantuan teknis dan panduan moderasi sistem.</div>
+
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+                <div style="font-weight: 600; font-size: 0.9rem; color: #0f172a; margin-bottom: 4px;">Moderasi Laporan</div>
+                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.5;">Gunakan menu <strong>Laporan</strong> di sidebar untuk mengubah status laporan masyarakat. Anda dapat menolak laporan spam atau meneruskannya ke dinas terkait.</div>
+            </div>
+            <div style="padding: 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+                <div style="font-weight: 600; font-size: 0.9rem; color: #0f172a; margin-bottom: 4px;">Kendala Sistem</div>
+                <div style="font-size: 0.8rem; color: #64748b; line-height: 1.5;">Jika terdapat error pada database atau kegagalan API, harap catat pesan error dan laporkan ke SuperAdmin IT.</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            <div style="font-weight: 600; font-size: 0.85rem; color: #0f172a; margin-bottom: 8px;">Dukungan Teknis IT</div>
+            <a href="mailto:it-support@aduancepat.com" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 18px; border-radius: 6px; font-size: 0.84rem; font-weight: 600; text-decoration: none; border: 1.5px solid rgba(26,60,26,0.3); color: #166534; transition: all 0.15s; width: 100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Hubungi IT (Email)
+            </a>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+            <button type="button" style="background: transparent; color: #64748b; padding: 7px 14px; border: none; font-weight: 600; cursor: pointer; width: 100%; border-radius: 6px;" onclick="closeHelpModal()">Tutup</button>
+        </div>
+    </div>
+</div>
+
     <script>
+        function openHelpModal() {
+            const modal = document.getElementById('help-modal');
+            if (modal) {
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeHelpModal() {
+            const modal = document.getElementById('help-modal');
+            if (modal) {
+                modal.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeHelpModal();
+        });
+
         // Global variables for maps and incidents data
         let mapInitialized = false;
         let leafletMap = null;
         let markersGroup = null;
-        let incidentsData = [];
-        try {
-            const savedData = localStorage.getItem('incidentsData');
-            if (savedData) {
-                incidentsData = JSON.parse(savedData);
-            }
-        } catch (e) {
-            console.error('Error loading incidentsData from localStorage:', e);
-        }
+        let incidentsData = {{ incidents_json|safe }};
 
         // Overview map global variables
         let overviewMapInitialized = false;
@@ -2259,6 +2427,23 @@
             document.getElementById('sidebar-overlay').classList.toggle('open');
         }
 
+        window.toggleChartDays = function(val) {
+            console.log("Toggling chart to: " + val + " days");
+            const chart7 = document.getElementById('chart-7');
+            const chart30 = document.getElementById('chart-30');
+            if (chart7 && chart30) {
+                if (val === '7') {
+                    chart7.style.display = 'block';
+                    chart30.style.display = 'none';
+                } else {
+                    chart7.style.display = 'none';
+                    chart30.style.display = 'block';
+                }
+            } else {
+                console.error("Chart elements not found!");
+            }
+        };
+
         function switchTab(tabId) {
             // Remove active class from all tab panes and sidebar links
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -2277,12 +2462,15 @@
                 document.getElementById('page-title').innerText = linkEl.innerText.trim();
             }
 
-            // Hide/Show search bar based on whether it is the main dashboard tab
+            // Hide/Show search bar and dashboard subtabs based on active tab
             const searchBox = document.querySelector('.topbar .search-box');
+            const dashboardSubtabs = document.getElementById('dashboard-subtabs');
             if (tabId === 'dashboard-tab') {
                 if (searchBox) searchBox.style.visibility = 'visible';
+                if (dashboardSubtabs) dashboardSubtabs.style.display = 'flex';
             } else {
                 if (searchBox) searchBox.style.visibility = 'hidden';
+                if (dashboardSubtabs) dashboardSubtabs.style.display = 'none';
             }
         }
 
@@ -2540,28 +2728,25 @@
             });
         });
 
-        // Topbar tab triggers
+        // Dashboard sub-tab triggers
         document.querySelectorAll('.topbar-tab-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                document.querySelectorAll('.topbar-tab-link').forEach(el => el.classList.remove('active'));
-                link.classList.add('active');
+                const subtabName = link.getAttribute('data-subtab');
+                if (!subtabName) return;
 
-                const tabName = link.innerText.trim().toLowerCase().replace(' ', '-');
-
+                document.querySelectorAll('.topbar-tab-link').forEach(el => {
+                    el.classList.toggle('active', el.getAttribute('data-subtab') === subtabName);
+                });
                 document.querySelectorAll('.subtab-pane').forEach(pane => pane.classList.remove('active'));
 
-                const targetPane = document.getElementById(`${tabName}-subtab`);
+                const targetPane = document.getElementById(`${subtabName}-subtab`);
                 if (targetPane) {
                     targetPane.classList.add('active');
-                    if (tabName === 'incident-map') {
+                    if (subtabName === 'incident-map') {
                         initLeafletMap();
-                    } else if (tabName === 'overview') {
-                        if (overviewMap) {
-                            setTimeout(() => {
-                                overviewMap.invalidateSize();
-                            }, 100);
-                        }
+                    } else if (subtabName === 'overview' && overviewMap) {
+                        setTimeout(() => overviewMap.invalidateSize(), 100);
                     }
                 }
             });

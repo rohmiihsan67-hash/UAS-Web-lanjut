@@ -11,4 +11,8 @@ urlpatterns = [
     path('reset-password/', views.reset_password_view, name='reset_password'),
     path('resend-otp/', views.resend_otp_view, name='resend_otp'),
     path('reset-success/', views.reset_success_view, name='reset_success'),
+    path('admin-dashboard/block-ip/', views.block_ip, name='block_ip'),
+    path('admin-dashboard/unblock-ip/<int:ip_id>/', views.unblock_ip, name='unblock_ip'),
+    path('admin-dashboard/save-settings/', views.save_settings, name='save_settings'),
+    path('admin-dashboard/clear-cache/', views.clear_cache, name='clear_cache'),
 ]

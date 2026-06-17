@@ -240,10 +240,19 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="subs-search-input" placeholder="Cari laporan...">
         </div>
-        <button class="btn btn-outline" style="white-space:nowrap; font-size:0.8rem; padding:8px 14px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
-            Filter
-        </button>
+        <div class="subs-search" id="filter-dropdown-wrap" style="position:relative;">
+            <button class="btn btn-outline" style="white-space:nowrap; font-size:0.8rem; padding:8px 14px;" onclick="document.getElementById('filter-panel').classList.toggle('show')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>
+                Filter
+            </button>
+            <div id="filter-panel" style="display:none; position:absolute; right:0; top:110%; background:#fff; border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; min-width:160px; z-index:100; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
+                <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Filter Status</div>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;padding:4px 0;"><input type="radio" name="filter_status" value="" onchange="filterRows('')" checked> Semua</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;padding:4px 0;"><input type="radio" name="filter_status" value="pending" onchange="filterRows('pending')"> Menunggu</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;padding:4px 0;"><input type="radio" name="filter_status" value="in_progress" onchange="filterRows('in_progress')"> Diproses</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer;padding:4px 0;"><input type="radio" name="filter_status" value="resolved" onchange="filterRows('resolved')"> Selesai</label>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -292,7 +301,7 @@
                 </thead>
                 <tbody id="subs-tbody">
                     {% for s in submissions %}
-                    <tr class="subs-row" data-title="{{ s.title|lower }}">
+                    <tr class="subs-row" data-title="{{ s.title|lower }}" data-status="{{ s.status }}">
                         <td>
                             <div class="td-title-cell">
                                 <div class="td-report-img">
@@ -322,7 +331,7 @@
                             {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
                             {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
                         </td>
-                        <td><a href="#" class="action-link">Lihat Detail</a></td>
+                        <td><a href="#" class="action-link" onclick="event.preventDefault(); showDetail({{ s.id }}, '{{ s.title|escapejs }}', '{{ s.status }}', '{{ s.created_at|date:"d M Y" }}', '{{ s.description|truncatechars:200|escapejs }}', '{{ s.location_address|escapejs }}')">Lihat Detail</a></td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -396,8 +405,8 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
 <script>
+    // Search
     const searchInput = document.getElementById('subs-search-input');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -407,5 +416,85 @@
             });
         });
     }
+
+    // Filter
+    function filterRows(status) {
+        document.querySelectorAll('.subs-row').forEach(row => {
+            if (!status || row.dataset.status === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        document.getElementById('filter-panel').classList.remove('show');
+    }
+
+    // Close filter panel on outside click
+    document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('filter-dropdown-wrap');
+        const panel = document.getElementById('filter-panel');
+        if (wrap && panel && !wrap.contains(e.target)) {
+            panel.style.display = 'none';
+        }
+    });
+
+    // Fix toggle for filter panel
+    const filterPanel = document.getElementById('filter-panel');
+    if (filterPanel) {
+        const observer = new MutationObserver(() => {});
+        // Use classList.contains('show') → toggle display
+        const filterBtn = filterPanel.previousElementSibling;
+        filterPanel.classList.add = new Proxy(filterPanel.classList.add, {
+            apply(target, thisArg, args) {
+                Reflect.apply(target, thisArg, args);
+                if (args.includes('show')) filterPanel.style.display = 'block';
+            }
+        });
+        filterPanel.classList.remove = new Proxy(filterPanel.classList.remove, {
+            apply(target, thisArg, args) {
+                Reflect.apply(target, thisArg, args);
+                if (args.includes('show')) filterPanel.style.display = 'none';
+            }
+        });
+    }
+
+    // Detail Modal
+    function showDetail(id, title, status, date, desc, location) {
+        document.getElementById('detail-title').textContent = title;
+        document.getElementById('detail-status').textContent = status === 'resolved' ? 'Selesai' : status === 'in_progress' ? 'Sedang Diproses' : 'Menunggu';
+        document.getElementById('detail-date').textContent = date;
+        document.getElementById('detail-desc').textContent = desc || '-';
+        document.getElementById('detail-location').textContent = location || '-';
+        document.getElementById('detail-modal').classList.add('open');
+    }
 </script>
-{% endblock %}
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)this.classList.remove('open')" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all 0.2s;">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:480px;box-shadow:0 20px 40px rgba(0,0,0,0.12);">
+    <div style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-bottom:4px;" id="detail-title"></div>
+    <div style="font-size:0.8rem;color:#64748b;margin-bottom:20px;">Detail Laporan</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:12px;">
+        <div style="flex:1;background:#f8fafc;border-radius:8px;padding:12px;">
+          <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:4px;">Status</div>
+          <div style="font-weight:600;font-size:0.85rem;color:#0f172a;" id="detail-status"></div>
+        </div>
+        <div style="flex:1;background:#f8fafc;border-radius:8px;padding:12px;">
+          <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:4px;">Tanggal</div>
+          <div style="font-weight:600;font-size:0.85rem;color:#0f172a;" id="detail-date"></div>
+        </div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:4px;">Lokasi</div>
+        <div style="font-size:0.83rem;color:#334155;" id="detail-location"></div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;margin-bottom:4px;">Deskripsi</div>
+        <div style="font-size:0.83rem;color:#334155;line-height:1.6;" id="detail-desc"></div>
+      </div>
+    </div>
+    <button onclick="document.getElementById('detail-modal').classList.remove('open')" style="margin-top:20px;width:100%;padding:10px;border:none;background:#f1f5f9;border-radius:8px;font-weight:600;cursor:pointer;">Tutup</button>
+  </div>
+</div>
+<style>#detail-modal.open{opacity:1!important;visibility:visible!important;}</style>

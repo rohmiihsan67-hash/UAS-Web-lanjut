@@ -205,7 +205,9 @@
     <div class="card" style="grid-column: 1;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
             <h2 style="font-size:1rem; font-weight:700;">Laporan Terbaru</h2>
+            {% if not request.user.is_staff %}
             <a href="{% url 'user_my_submissions' %}" class="btn btn-ghost" style="font-size:0.78rem; padding:5px 10px;">Lihat Semua →</a>
+            {% endif %}
         </div>
         {% if recent_submissions %}
         <table class="recent-table">
@@ -242,7 +244,7 @@
         {% else %}
         <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <p>Belum ada laporan. <a href="{% url 'user_new_report' %}" style="color:var(--green-dark); font-weight:600;">Buat laporan pertama</a></p>
+            <p>{% if not request.user.is_staff %}Belum ada laporan. <a href="{% url 'user_new_report' %}" style="color:var(--green-dark); font-weight:600;">Buat laporan pertama</a>{% else %}Belum ada data laporan.{% endif %}</p>
         </div>
         {% endif %}
     </div>
@@ -259,6 +261,7 @@
             <div class="trust-label">Berdasarkan akurasi laporan dan riwayat kontribusi Anda.</div>
         </div>
 
+        {% if not request.user.is_staff %}
         <div class="card">
             <h3 style="font-size:0.88rem; font-weight:700; margin-bottom:14px;">Aksi Cepat</h3>
             <div style="display:flex; flex-direction:column; gap:8px;">
@@ -276,6 +279,21 @@
                 </a>
             </div>
         </div>
+        {% else %}
+        <div class="card">
+            <h3 style="font-size:0.88rem; font-weight:700; margin-bottom:14px;">Aksi Cepat</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-primary" style="justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Buka Dasbor Admin
+                </a>
+                <a href="{% url 'user_public_feed' %}" class="btn btn-ghost" style="justify-content:center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    Feed Komunitas
+                </a>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -10,6 +10,12 @@ def get_user_profile(user):
     return profile
 
 
+def redirect_staff_to_admin(request):
+    if request.user.is_staff:
+        return redirect('admin_dashboard')
+    return None
+
+
 @login_required(login_url='/akun/login/')
 def overview_view(request):
     profile = get_user_profile(request.user)
@@ -67,11 +73,21 @@ def public_feed_view(request):
     submissions = Submission.objects.all().order_by('-created_at')
     resolved_count = Submission.objects.filter(status='resolved').count()
     in_progress_count = Submission.objects.filter(status='in_progress').count()
+    
+    responded = Submission.objects.exclude(status='pending').order_by('-updated_at')[:100]
+    total_seconds = 0
+    count = 0
+    for r in responded:
+        total_seconds += (r.updated_at - r.created_at).total_seconds()
+        count += 1
+    avg_response = f"{(total_seconds / count / 3600):.1f}h" if count > 0 else "-"
+
     context = {
         'profile': profile,
         'submissions': submissions,
         'resolved_count': resolved_count,
         'in_progress_count': in_progress_count,
+        'avg_response': avg_response,
         'active_page': 'public_feed',
     }
     return render(request, 'user/public_feed.html', context)
@@ -79,6 +95,9 @@ def public_feed_view(request):
 
 @login_required(login_url='/akun/login/')
 def my_submissions_view(request):
+    staff_redirect = redirect_staff_to_admin(request)
+    if staff_redirect:
+        return staff_redirect
     profile = get_user_profile(request.user)
     submissions = Submission.objects.filter(user=request.user)
     total = submissions.count()
@@ -133,25 +152,78 @@ def settings_view(request):
     profile = get_user_profile(request.user)
     if request.method == 'POST':
         action = request.POST.get('action')
+
         if action == 'change_password':
             from django.contrib.auth import update_session_auth_hash
             old_password = request.POST.get('old_password')
             new_password = request.POST.get('new_password')
-            if request.user.check_password(old_password):
-                request.user.set_password(new_password)
-                request.user.save()
-                update_session_auth_hash(request, request.user)
-                messages.success(request, 'Password berhasil diubah!')
+            if not old_password or not new_password:
+                messages.error(request, 'Password lama dan baru wajib diisi.')
+            elif request.user.check_password(old_password):
+                if len(new_password) < 8:
+                    messages.error(request, 'Password baru minimal 8 karakter.')
+                else:
+                    request.user.set_password(new_password)
+                    request.user.save()
+                    update_session_auth_hash(request, request.user)
+                    messages.success(request, 'Password berhasil diubah!')
             else:
-                messages.error(request, 'Password lama salah.')
-        elif action == 'update_regional':
-            language = request.POST.get('language')
-            timezone = request.POST.get('timezone')
-            profile.language = language
-            profile.timezone = timezone
+                messages.error(request, 'Password lama yang Anda masukkan salah.')
+
+        elif action == 'change_email':
+            new_email = request.POST.get('new_email', '').strip()
+            password = request.POST.get('confirm_password', '')
+            if not new_email:
+                messages.error(request, 'Email baru tidak boleh kosong.')
+            elif not request.user.check_password(password):
+                messages.error(request, 'Password salah. Konfirmasi diperlukan untuk mengubah email.')
+            else:
+                request.user.email = new_email
+                request.user.save()
+                messages.success(request, f'Email berhasil diubah menjadi {new_email}.')
+
+        elif action == 'change_phone':
+            new_phone = request.POST.get('new_phone', '').strip()
+            if not new_phone:
+                messages.error(request, 'Nomor telepon tidak boleh kosong.')
+            else:
+                profile.phone = new_phone
+                profile.save()
+                messages.success(request, f'Nomor telepon berhasil diperbarui.')
+
+        elif action == 'toggle_mfa':
+            profile.mfa_enabled = not profile.mfa_enabled
             profile.save()
-            messages.success(request, 'Regional preferences saved successfully!')
+            status = "diaktifkan" if profile.mfa_enabled else "dinonaktifkan"
+            messages.success(request, f'Autentikasi Dua Faktor berhasil {status}.')
+
+        elif action == 'update_regional':
+
+            profile.language = request.POST.get('language', profile.language)
+            profile.timezone = request.POST.get('timezone', profile.timezone)
+            profile.save()
+            messages.success(request, 'Preferensi bahasa & regional berhasil disimpan.')
+
+        elif action == 'update_notifications':
+            profile.notif_email = request.POST.get('notif_email') == 'on'
+            profile.notif_push  = request.POST.get('notif_push') == 'on'
+            profile.notif_sms   = request.POST.get('notif_sms') == 'on'
+            profile.save()
+            if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+                messages.success(request, 'Preferensi notifikasi berhasil disimpan.')
+
+        elif action == 'update_privacy':
+            profile.privacy_mode = request.POST.get('privacy_mode', profile.privacy_mode)
+            profile.save()
+            messages.success(request, 'Pengaturan privasi berhasil disimpan.')
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            from django.http import JsonResponse
+            return JsonResponse({'status': 'success'})
+
         return redirect('user_settings')
+
+
     context = {
         'profile': profile,
         'active_page': 'settings',
@@ -161,6 +233,9 @@ def settings_view(request):
 
 @login_required(login_url='/akun/login/')
 def new_report_view(request):
+    staff_redirect = redirect_staff_to_admin(request)
+    if staff_redirect:
+        return staff_redirect
     profile = get_user_profile(request.user)
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
