@@ -68,44 +68,26 @@
                     <th style="padding: 10px 12px; text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase;">Pengguna</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for log in security_logs %}
-                <tr style="border-bottom: 1px solid #f1f5f9; {% if log.status == 'blocked' %}background: #fff5f5;{% elif log.status == 'login_failed' %}background: #fffbeb;{% endif %}">
-                    <td style="padding: 10px 12px; color: var(--text-muted); white-space: nowrap;">{{ log.created_at|date:"d M H:i:s" }}</td>
-                    <td style="padding: 10px 12px; font-weight: 600; font-family: monospace;">{{ log.ip_address }}</td>
-                    <td style="padding: 10px 12px; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        <code style="font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ log.path|truncatechars:45 }}</code>
-                    </td>
-                    <td style="padding: 10px 12px;">
-                        <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; 
-                            {% if log.method == 'POST' %}background:#eff6ff; color:#1d4ed8;
-                            {% else %}background:#f1f5f9; color:#475569;{% endif %}">
-                            {{ log.method }}
-                        </span>
-                    </td>
-                    <td style="padding: 10px 12px;">
-                        {% if log.status == 'blocked' %}
-                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #fee2e2; color: #b91c1c; font-weight: 600;">🚫 Diblokir</span>
-                        {% elif log.status == 'login_failed' %}
-                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #fef3c7; color: #92400e; font-weight: 600;">⚠️ Login Gagal</span>
-                        {% elif log.status == 'login_success' %}
-                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #dcfce7; color: #14532d; font-weight: 600;">✅ Berhasil</span>
-                        {% else %}
-                            <span style="font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #f1f5f9; color: #475569; font-weight: 600;">📄 Izin</span>
-                        {% endif %}
-                    </td>
-                    <td style="padding: 10px 12px; color: var(--text-muted);">
-                        {% if log.user %}{{ log.user.username }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
-                        Belum ada log akses. Log akan muncul secara otomatis setelah ada pengunjung.
-                    </td>
-                </tr>
-                {% endfor %}
+            <tbody id="security-logs-tbody">
+                {% include 'admin/dashboard_tabs/security_logs_body.html' %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+    // Polling untuk update Security Logs secara otomatis setiap 5 detik
+    setInterval(function() {
+        fetch("{% url 'admin_security_logs_partial' %}")
+            .then(response => {
+                if(response.ok) return response.text();
+                throw new Error('Network response was not ok.');
+            })
+            .then(html => {
+                document.getElementById('security-logs-tbody').innerHTML = html;
+            })
+            .catch(error => {
+                console.error("Gagal mengambil update log keamanan:", error);
+            });
+    }, 5000); // 5000ms = 5 detik
+</script>

@@ -15,4 +15,5 @@ urlpatterns = [
     path('admin-dashboard/unblock-ip/<int:ip_id>/', views.unblock_ip, name='unblock_ip'),
     path('admin-dashboard/save-settings/', views.save_settings, name='save_settings'),
     path('admin-dashboard/clear-cache/', views.clear_cache, name='clear_cache'),
+    path('admin-dashboard/security-logs-partial/', views.admin_security_logs_partial, name='admin_security_logs_partial'),
 ]

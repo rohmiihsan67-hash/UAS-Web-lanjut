@@ -460,3 +460,16 @@ def clear_cache(request):
         messages.success(request, 'Cache sistem berhasil dibersihkan.')
         
     return redirect('/akun/admin-dashboard/?tab=settings')
+
+
+@login_required(login_url='/akun/login/')
+def admin_security_logs_partial(request):
+    """Endpoint AJAX untuk polling log keamanan secara real-time."""
+    from django.http import HttpResponseForbidden
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    from .models import SecurityLog
+    security_logs = SecurityLog.objects.all().order_by('-created_at')[:100]
+    return render(request, 'admin/dashboard_tabs/security_logs_body.html', {
+        'security_logs': security_logs
+    })
