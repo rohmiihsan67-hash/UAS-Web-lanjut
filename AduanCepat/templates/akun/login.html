@@ -463,24 +463,24 @@
         </div>
         {% endif %}
 
-        <form method="POST" id="login-form">
+        <form method="POST" id="login-form" autocomplete="off">
             {% csrf_token %}
             <input type="hidden" name="login_role" id="login-role-input" value="user">
 
-            <!-- Email / Username -->
+            <!-- Username / NIK -->
             <div>
-                <label class="field-label" for="id_username">Alamat Email</label>
+                <label class="field-label" id="username-label" for="id_username">Username / NIK</label>
                 <div class="input-icon-wrap" style="margin-top:6px;">
                     <span class="input-icon">
-                        <!-- Envelope icon -->
+                        <!-- User icon -->
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2" />
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
                         </svg>
                     </span>
                     <input class="field-input" type="text" id="id_username" name="username"
-                        placeholder="name@organization.gov" autocomplete="username" required>
+                        placeholder="Masukkan username atau NIK" autocomplete="off" required>
                 </div>
             </div>
 
@@ -500,7 +500,7 @@
                         </svg>
                     </span>
                     <input class="field-input" type="password" id="id_password" name="password" placeholder="••••••••"
-                        autocomplete="current-password" required>
+                        autocomplete="off" required>
                     <button type="button" class="eye-btn" id="toggle-eye" aria-label="Alihkan visibilitas kata sandi"
                         onclick="togglePassword()">
                         <!-- Eye icon -->
@@ -573,10 +573,10 @@
             document.getElementById('tab-admin').classList.toggle('active', role === 'admin');
             document.getElementById('login-role-input').value = role;
 
-            const emailPlaceholder = role === 'admin'
-                ? 'admin@organization.gov'
-                : 'name@organization.gov';
-            document.getElementById('id_username').placeholder = emailPlaceholder;
+            const usernamePlaceholder = role === 'admin'
+                ? 'Masukkan username admin'
+                : 'Masukkan username atau NIK';
+            document.getElementById('id_username').placeholder = usernamePlaceholder;
 
             // Reset username dan password setiap kali pindah tab
             document.getElementById('id_username').value = '';
@@ -608,6 +608,19 @@
                     <circle cx="12" cy="12" r="3"/>`;
             }
         }
+
+        // Clear username & password inputs on page load to prevent browser autofill
+        function clearLoginInputs() {
+            const usernameInput = document.getElementById('id_username');
+            const passwordInput = document.getElementById('id_password');
+            if (usernameInput) usernameInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+        }
+
+        document.addEventListener("DOMContentLoaded", clearLoginInputs);
+        window.addEventListener("load", function() {
+            setTimeout(clearLoginInputs, 50);
+        });
     </script>
 
 </body>
