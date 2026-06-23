@@ -96,12 +96,28 @@ WSGI_APPLICATION = 'masyarakat_project.wsgi.application'
 
 import dj_database_url
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DB_ENGINE = os.getenv('DB_ENGINE')
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
 
-if DATABASE_URL:
+if DB_ENGINE and DB_NAME and DB_USER and DB_PASSWORD and DB_HOST:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT or '5432',
+        }
+    }
+elif os.getenv('DATABASE_URL'):
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL,
+            default=os.getenv('DATABASE_URL'),
             conn_max_age=0,
             ssl_require=True
         )
