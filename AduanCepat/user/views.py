@@ -49,13 +49,16 @@ def incident_map_view(request):
             'id': sub.id,
             'title': sub.title,
             'category': sub.get_category_display(),
+            'category_raw': sub.category,
             'status': sub.status,
             'status_display': sub.get_status_display(),
+            'priority': sub.priority,
             'lat': sub.latitude,
             'lng': sub.longitude,
             'address': sub.location_address,
             'time': sub.created_at.strftime("%d %b %Y %H:%M"),
-            'color': sub.status_color
+            'color': sub.status_color,
+            'description': (sub.description[:80] + '...') if sub.description and len(sub.description) > 80 else (sub.description or ''),
         })
 
     context = {

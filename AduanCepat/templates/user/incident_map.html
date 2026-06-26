@@ -1,172 +1,653 @@
 {% extends 'user/base_user.html' %}
+{% load static %}
 {% block title %}Incident Map{% endblock %}
-{% block meta_desc %}Peta insiden laporan warga AduanCepat di seluruh wilayah.{% endblock %}
+{% block meta_desc %}Peta insiden laporan warga AduanCepat di seluruh wilayah Kota Samarinda.{% endblock %}
 
 {% block extra_head %}
 <style>
+    /* ══════════════════════════════════════
+       MAP PAGE LAYOUT
+    ══════════════════════════════════════ */
+    .map-page-controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+
+    .control-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .control-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    /* Zone Select Dropdown */
+    .zone-select {
+        padding: 7px 32px 7px 12px;
+        border-radius: 99px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--text-dark);
+        cursor: pointer;
+        transition: all 0.2s;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        min-width: 180px;
+    }
+    .zone-select:hover, .zone-select:focus {
+        border-color: var(--green-dark);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(26,60,26,0.08);
+    }
+
+    /* Category Filter Chips */
+    .filter-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .filter-chip {
+        padding: 6px 14px;
+        border-radius: 99px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .filter-chip:hover {
+        border-color: rgba(26,60,26,0.3);
+        background: #f8faf5;
+        transform: translateY(-1px);
+    }
+    .filter-chip.active {
+        border-color: var(--green-dark);
+        background: var(--green-pale);
+        color: var(--green-dark);
+        box-shadow: 0 2px 8px rgba(26,60,26,0.1);
+    }
+    .filter-chip .chip-icon {
+        font-size: 0.85rem;
+        line-height: 1;
+    }
+    .filter-chip .chip-count {
+        background: rgba(26,60,26,0.08);
+        padding: 1px 6px;
+        border-radius: 99px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+    .filter-chip.active .chip-count {
+        background: rgba(26,60,26,0.15);
+        color: var(--green-dark);
+    }
+
+    /* Map + Sidebar Grid */
     .map-layout {
         display: grid;
-        grid-template-columns: 1fr 320px;
+        grid-template-columns: 1fr 340px;
         gap: 20px;
-        margin-top: 20px;
     }
-    @media (max-width: 1000px) { .map-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .map-layout { grid-template-columns: 1fr; } }
 
+    /* Map Container */
     .map-container {
         border-radius: var(--radius);
         overflow: hidden;
         border: 1px solid var(--border);
         position: relative;
-        min-height: 500px;
+        min-height: 560px;
         background: #e8ede3;
+        box-shadow: var(--shadow-sm);
     }
-    #map {
+    #incident-leaflet-map {
         width: 100%;
-        height: 500px;
+        height: 560px;
+        z-index: 1;
+        border-radius: var(--radius);
     }
+
+    /* Map Overlay Badge */
     .map-overlay-badge {
         position: absolute;
         top: 14px;
         left: 14px;
         background: var(--white);
         border-radius: var(--radius-sm);
-        padding: 8px 14px;
+        padding: 10px 16px;
         font-size: 0.8rem;
         font-weight: 600;
         color: var(--green-dark);
         box-shadow: var(--shadow-md);
         display: flex;
         align-items: center;
-        gap: 6px;
-        z-index: 10;
-    }
-    .map-overlay-badge span { color: var(--text-muted); font-weight:400; }
-
-    .map-filter-bar {
-        display: flex;
         gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
+        z-index: 999;
+        pointer-events: none;
+        backdrop-filter: blur(8px);
+        background: rgba(255,255,255,0.92);
     }
-    .filter-chip {
-        padding: 5px 12px;
-        border-radius: 99px;
+    .map-overlay-badge .badge-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--green-light);
+        border-radius: 50%;
+        animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .map-overlay-badge span { color: var(--text-muted); font-weight: 400; }
+
+    /* ══════════════════════════════════════
+       LEGEND PANEL (bottom-right of map)
+    ══════════════════════════════════════ */
+    .map-legend {
+        position: absolute;
+        bottom: 14px;
+        right: 14px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+        box-shadow: var(--shadow-md);
+        font-size: 0.73rem;
+        z-index: 999;
+        min-width: 210px;
+        border: 1px solid rgba(26,60,26,0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .legend-header {
+        font-weight: 800;
         font-size: 0.78rem;
-        font-weight: 600;
-        border: 1.5px solid var(--border);
-        background: var(--white);
-        color: var(--text-muted);
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         cursor: pointer;
-        transition: all 0.15s;
+        user-select: none;
+        gap: 8px;
     }
-    .filter-chip:hover, .filter-chip.active {
-        border-color: var(--green-dark);
-        background: var(--green-pale);
-        color: var(--green-dark);
+    .legend-header-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .legend-toggle-icon {
+        transition: transform 0.3s ease;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+    }
+    .legend-body {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 500px;
+        opacity: 1;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    /* Collapsed state */
+    .map-legend.collapsed {
+        min-width: auto;
+        padding-bottom: 12px;
+    }
+    .map-legend.collapsed .legend-body {
+        max-height: 0;
+        opacity: 0;
+        margin-top: 0;
+    }
+    .map-legend.collapsed .legend-toggle-icon {
+        transform: rotate(180deg);
+    }
+    .legend-section {
+        margin-bottom: 10px;
+    }
+    .legend-section:last-child { margin-bottom: 0; }
+    .legend-section-title {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 3px 0;
+        color: var(--text-mid);
+        font-weight: 500;
+    }
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .legend-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+    }
+    .legend-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 8px 0;
     }
 
+    /* ══════════════════════════════════════
+       ZONE INFO BANNER (top of map when zone selected)
+    ══════════════════════════════════════ */
+    .zone-info-banner {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-sm);
+        padding: 8px 18px;
+        box-shadow: var(--shadow-md);
+        z-index: 999;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        border: 1px solid rgba(26,60,26,0.08);
+    }
+    .zone-info-banner.visible { display: flex; }
+    .zone-info-banner .zone-color-tag {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+    .zone-info-banner .zone-count {
+        font-size: 0.72rem;
+        font-weight: 400;
+        color: var(--text-muted);
+    }
+    .zone-info-banner .close-zone-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
+        color: var(--text-muted);
+        display: flex;
+        transition: color 0.15s;
+    }
+    .zone-info-banner .close-zone-btn:hover { color: var(--text-dark); }
+
+    /* ══════════════════════════════════════
+       SIDEBAR — INCIDENT LIST
+    ══════════════════════════════════════ */
+    .sidebar-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    .sidebar-panel-header {
+        padding: 18px 18px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--white);
+        border-radius: var(--radius) var(--radius) 0 0;
+        border: 1px solid var(--border);
+        border-bottom: none;
+    }
+    .sidebar-panel-header h3 {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+    }
+    .sidebar-panel-header .subtitle {
+        font-size: 0.73rem;
+        color: var(--text-muted);
+    }
+    .sidebar-panel-body {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 var(--radius) var(--radius);
+        overflow: hidden;
+    }
     .incident-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        max-height: 520px;
+        max-height: 488px;
         overflow-y: auto;
-        padding-right: 4px;
+        padding: 6px;
     }
     .incident-list::-webkit-scrollbar { width: 4px; }
-    .incident-list::-webkit-scrollbar-track { background: var(--bg); border-radius: 2px; }
+    .incident-list::-webkit-scrollbar-track { background: transparent; }
     .incident-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .incident-item {
         background: var(--white);
-        border: 1px solid var(--border);
+        border: 1px solid transparent;
         border-radius: var(--radius-sm);
         padding: 14px;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.18s;
+        position: relative;
     }
     .incident-item:hover {
-        border-color: rgba(26,60,26,0.25);
-        transform: translateX(2px);
-        box-shadow: var(--shadow-sm);
+        background: #f8faf5;
+        border-color: rgba(26,60,26,0.12);
+        transform: translateX(3px);
     }
+    .incident-item.highlighted {
+        background: var(--green-pale);
+        border-color: rgba(26,60,26,0.2);
+    }
+    .incident-item-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+    .incident-cat-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .incident-item-info { flex: 1; min-width: 0; }
     .incident-title {
-        font-size: 0.85rem;
+        font-size: 0.83rem;
         font-weight: 700;
         color: var(--text-dark);
-        margin-bottom: 4px;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .incident-loc {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         color: var(--text-muted);
         display: flex;
         align-items: center;
         gap: 4px;
-        margin-bottom: 8px;
     }
-    .incident-loc svg { width: 11px; height: 11px; }
+    .incident-loc svg { width: 10px; height: 10px; flex-shrink: 0; }
     .incident-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    .incident-date { font-size: 0.72rem; color: var(--text-muted); }
-
-    .no-map-placeholder {
+    .incident-meta {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .incident-date {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    .incident-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+    .incident-empty svg { margin-bottom: 10px; opacity: 0.3; }
+    .incident-empty p { font-size: 0.82rem; }
+
+    /* Category-specific marker colors */
+    .cat-infrastructure { background: rgba(245,158,11,0.12); color: #d97706; }
+    .cat-environment { background: rgba(16,185,129,0.12); color: #059669; }
+    .cat-public_safety { background: rgba(239,68,68,0.12); color: #dc2626; }
+    .cat-other { background: rgba(99,102,241,0.12); color: #4f46e5; }
+
+    /* Custom leaflet popup */
+    .custom-popup .leaflet-popup-content-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        border: 1px solid rgba(26,60,26,0.06);
+    }
+    .custom-popup .leaflet-popup-content {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+    }
+    .popup-inner {
+        padding: 16px;
+        min-width: 220px;
+        max-width: 280px;
+    }
+    .popup-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .popup-cat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        height: 500px;
-        background: linear-gradient(135deg, #e8ede3 0%, #d4ddc8 100%);
-        color: var(--text-muted);
-        gap: 12px;
+        font-size: 1.1rem;
+        flex-shrink: 0;
     }
-    .no-map-placeholder svg { width: 60px; height: 60px; opacity: 0.4; }
-    .map-grid {
+    .popup-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: #111827;
+        line-height: 1.3;
+    }
+    .popup-address {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .popup-desc {
+        font-size: 0.75rem;
+        color: #374151;
+        line-height: 1.5;
+        margin-bottom: 10px;
+        padding: 8px 10px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border-left: 3px solid #e2e8f0;
+    }
+    .popup-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+    .popup-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 99px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+    .popup-badge.status-resolved { background: #dcfce7; color: #166534; }
+    .popup-badge.status-in_progress { background: #dbeafe; color: #1e40af; }
+    .popup-badge.status-pending { background: #fef3c7; color: #92400e; }
+    .popup-badge.status-pending_publication { background: #ede9fe; color: #5b21b6; }
+    .popup-time {
+        font-size: 0.68rem;
+        color: #9ca3af;
+    }
+
+    /* Status filter chips */
+    .status-filter-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════
+       GEOLOCATION BUTTON & USER MARKER
+    ══════════════════════════════════════ */
+    .locate-btn {
         position: absolute;
-        inset: 0;
-        background-image: 
-            linear-gradient(rgba(26,60,26,0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(26,60,26,0.08) 1px, transparent 1px);
-        background-size: 40px 40px;
+        top: 14px;
+        right: 14px;
+        z-index: 999;
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(26,60,26,0.08);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+        color: var(--text-muted);
     }
-    .map-center-marker {
+    .locate-btn:hover {
+        background: var(--white);
+        color: var(--green-dark);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+    .locate-btn.active {
+        color: #2563eb;
+        background: #eff6ff;
+        border-color: #93c5fd;
+    }
+    .locate-btn.loading {
+        pointer-events: none;
+    }
+    .locate-btn.loading svg {
+        animation: spin-locate 1s linear infinite;
+    }
+    @keyframes spin-locate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .locate-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* User location marker pulse */
+    .user-location-marker {
+        position: relative;
+    }
+    .user-loc-dot {
+        width: 16px;
+        height: 16px;
+        background: #3b82f6;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(59,130,246,0.4);
+        position: relative;
+        z-index: 2;
+    }
+    .user-loc-pulse {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        text-align: center;
-    }
-    .map-center-marker .pulse-dot {
-        width: 16px;
-        height: 16px;
-        background: var(--green-dark);
+        width: 40px;
+        height: 40px;
+        background: rgba(59,130,246,0.15);
         border-radius: 50%;
-        margin: 0 auto 6px;
-        position: relative;
-    }
-    .map-center-marker .pulse-dot::after {
-        content: '';
-        position: absolute;
-        inset: -6px;
-        border-radius: 50%;
-        border: 2px solid var(--green-dark);
-        opacity: 0.3;
-        animation: ripple 2s infinite;
-    }
-    @keyframes ripple {
-        0% { transform: scale(0.8); opacity: 0.4; }
-        100% { transform: scale(1.8); opacity: 0; }
-    }
-    
-    /* Leaflet overrides */
-    #incident-leaflet-map {
-        width: 100%;
-        height: 100%;
         z-index: 1;
-        border-radius: var(--radius-sm);
+        animation: user-pulse 2s ease-out infinite;
     }
+    @keyframes user-pulse {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+    }
+
+    /* User location accuracy circle */
+    .user-accuracy-circle {
+        background: rgba(59,130,246,0.08);
+        border: 1px solid rgba(59,130,246,0.2);
+        border-radius: 50%;
+    }
+
+    /* Location info toast */
+    .location-toast {
+        position: absolute;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-sm);
+        padding: 10px 18px;
+        box-shadow: var(--shadow-md);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        border: 1px solid rgba(26,60,26,0.06);
+        opacity: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+    .location-toast.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        pointer-events: auto;
+    }
+    .location-toast .toast-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+    .toast-icon.success { background: #dcfce7; }
+    .toast-icon.error { background: #fee2e2; }
+    .toast-icon.loading { background: #dbeafe; }
 </style>
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -175,63 +656,199 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Peta Insiden</h1>
-    <p class="page-subtitle">Peta sebaran insiden dan laporan dari seluruh wilayah komunitas.</p>
+    <p class="page-subtitle">Peta sebaran insiden dan laporan dari seluruh wilayah Kota Samarinda.</p>
 </div>
 
-<div class="map-filter-bar">
-    <button class="filter-chip active" id="filter-all">Semua</button>
-    <button class="filter-chip" id="filter-infra">Infrastruktur</button>
-    <button class="filter-chip" id="filter-env">Lingkungan</button>
-    <button class="filter-chip" id="filter-safety">Keselamatan Publik</button>
-    <button class="filter-chip" id="filter-resolved">Selesai</button>
-    <button class="filter-chip" id="filter-progress">Sedang Diproses</button>
+<!-- ═══ CONTROLS BAR ═══ -->
+<div class="map-page-controls">
+    <!-- Zone Filter -->
+    <div class="control-group">
+        <span class="control-label">Zona</span>
+        <select class="zone-select" id="zone-filter">
+            <option value="all">🗺️ Semua Kecamatan</option>
+        </select>
+    </div>
+
+    <div style="width: 1px; height: 24px; background: var(--border);"></div>
+
+    <!-- Category Filter Chips -->
+    <div class="filter-chips" id="category-filters">
+        <button class="filter-chip active" data-category="all">
+            <span class="chip-icon">📊</span> Semua
+            <span class="chip-count" id="count-all">0</span>
+        </button>
+        <button class="filter-chip" data-category="infrastructure">
+            <span class="chip-icon">🏗️</span> Infrastruktur
+            <span class="chip-count" id="count-infrastructure">0</span>
+        </button>
+        <button class="filter-chip" data-category="environment">
+            <span class="chip-icon">🌿</span> Lingkungan
+            <span class="chip-count" id="count-environment">0</span>
+        </button>
+        <button class="filter-chip" data-category="public_safety">
+            <span class="chip-icon">⚠️</span> Keselamatan
+            <span class="chip-count" id="count-public_safety">0</span>
+        </button>
+        <button class="filter-chip" data-category="other">
+            <span class="chip-icon">📋</span> Lainnya
+            <span class="chip-count" id="count-other">0</span>
+        </button>
+    </div>
+
+    <div style="width: 1px; height: 24px; background: var(--border);"></div>
+
+    <!-- Status Filter Chips -->
+    <div class="status-filter-row" id="status-filters">
+        <button class="filter-chip active" data-status="all">Semua Status</button>
+        <button class="filter-chip" data-status="resolved">
+            <span class="legend-dot" style="width:8px;height:8px;background:#16a34a;"></span> Selesai
+        </button>
+        <button class="filter-chip" data-status="in_progress">
+            <span class="legend-dot" style="width:8px;height:8px;background:#2563eb;"></span> Diproses
+        </button>
+        <button class="filter-chip" data-status="pending">
+            <span class="legend-dot" style="width:8px;height:8px;background:#d97706;"></span> Menunggu
+        </button>
+    </div>
 </div>
 
+<!-- ═══ MAP + SIDEBAR LAYOUT ═══ -->
 <div class="map-layout">
     <!-- Map -->
-    <div class="map-container" style="padding:0; border:1px solid var(--border);">
+    <div class="map-container">
         <div id="incident-leaflet-map"></div>
 
-        <div class="map-overlay-badge" style="z-index: 999; pointer-events: none;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            {{ submissions|length }} Insiden <span>terdeteksi</span>
+        <!-- Locate Me Button -->
+        <button class="locate-btn" id="locate-btn" title="Lokasi Saya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+            </svg>
+        </button>
+
+        <!-- Location Toast -->
+        <div class="location-toast" id="location-toast">
+            <div class="toast-icon loading" id="toast-icon">📍</div>
+            <span id="toast-text">Mencari lokasi...</span>
         </div>
 
-        <div style="position:absolute; bottom:12px; right:12px; background:white; border-radius:var(--radius-sm); padding:10px 14px; box-shadow:var(--shadow-sm); font-size:0.73rem; display:flex; flex-direction:column; gap:5px; z-index: 999;">
-            <div style="font-weight:700; margin-bottom:3px; color:var(--text-dark);">Legenda</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#16a34a;border-radius:50%;display:inline-block;"></span> Selesai</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#2563eb;border-radius:50%;display:inline-block;"></span> Sedang Diproses</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;background:#d97706;border-radius:50%;display:inline-block;"></span> Menunggu</div>
+
+        <!-- Overlay Badge -->
+        <div class="map-overlay-badge">
+            <div class="badge-dot"></div>
+            <span id="visible-count">{{ submissions|length }}</span>&nbsp;Insiden <span>terdeteksi</span>
+        </div>
+
+        <!-- Zone Info Banner -->
+        <div class="zone-info-banner" id="zone-info-banner">
+            <div class="zone-color-tag" id="zone-color-tag"></div>
+            <span id="zone-name-display">—</span>
+            <span class="zone-count" id="zone-count-display">0 laporan</span>
+            <button class="close-zone-btn" id="close-zone-btn" title="Reset zona">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="map-legend" id="map-legend">
+            <div class="legend-header" id="legend-header" title="Klik untuk membuka/tutup legenda">
+                <div class="legend-header-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Legenda
+                </div>
+                <div class="legend-toggle-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+            </div>
+
+            <div class="legend-body">
+                <div class="legend-section">
+                    <div class="legend-section-title">Kategori Laporan</div>
+                    <div class="legend-item">
+                        <div class="legend-icon cat-infrastructure">🏗️</div>
+                        Infrastruktur
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon cat-environment">🌿</div>
+                        Lingkungan
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon cat-public_safety">⚠️</div>
+                        Keselamatan Publik
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon cat-other">📋</div>
+                        Lainnya
+                    </div>
+                </div>
+
+                <div class="legend-divider"></div>
+
+                <div class="legend-section">
+                    <div class="legend-section-title">Status</div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#16a34a;"></span> Selesai
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#2563eb;"></span> Sedang Diproses
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:#d97706;"></span> Menunggu
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Incident List -->
-    <div class="card" style="padding:18px;">
-        <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:14px;">Daftar Insiden</h3>
-        <div class="incident-list">
-            {% for s in submissions %}
-            <div class="incident-item">
-                <div class="incident-title">{{ s.title|truncatechars:45 }}</div>
-                {% if s.location_address %}
-                <div class="incident-loc">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    {{ s.location_address|truncatechars:35 }}
+    <!-- Incident List Sidebar -->
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+            <h3>Daftar Insiden</h3>
+            <div class="subtitle" id="list-count-label">Menampilkan {{ submissions|length }} laporan</div>
+        </div>
+        <div class="sidebar-panel-body">
+            <div class="incident-list" id="incident-list-container">
+                {% for s in submissions %}
+                <div class="incident-item"
+                     data-id="{{ s.id }}"
+                     data-lat="{{ s.latitude }}"
+                     data-lng="{{ s.longitude }}"
+                     data-category="{{ s.category }}"
+                     data-status="{{ s.status }}">
+                    <div class="incident-item-top">
+                        <div class="incident-cat-icon cat-{{ s.category }}">
+                            {% if s.category == 'infrastructure' %}🏗️
+                            {% elif s.category == 'environment' %}🌿
+                            {% elif s.category == 'public_safety' %}⚠️
+                            {% else %}📋{% endif %}
+                        </div>
+                        <div class="incident-item-info">
+                            <div class="incident-title">{{ s.title|truncatechars:40 }}</div>
+                            {% if s.location_address %}
+                            <div class="incident-loc">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                {{ s.location_address|truncatechars:30 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="incident-footer">
+                        <div class="incident-meta">
+                            {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
+                            {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
+                            {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
+                            {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
+                        </div>
+                        <span class="incident-date">{{ s.created_at|date:"d M Y" }}</span>
+                    </div>
                 </div>
-                {% endif %}
-                <div class="incident-footer">
-                    {% if s.status == 'resolved' %}<span class="badge badge-resolved">Selesai</span>
-                    {% elif s.status == 'in_progress' %}<span class="badge badge-progress">Diproses</span>
-                    {% elif s.status == 'pending_publication' %}<span class="badge badge-pendpub">Menunggu Pub.</span>
-                    {% else %}<span class="badge badge-pending">Menunggu</span>{% endif %}
-                    <span class="incident-date">{{ s.created_at|date:"d M Y" }}</span>
+                {% empty %}
+                <div class="incident-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <p>Belum ada insiden terdaftar.</p>
                 </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.85rem;">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:10px; opacity:0.4;"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <p>Belum ada insiden terdaftar.</p>
-            </div>
-            {% endfor %}
         </div>
     </div>
 </div>
@@ -240,62 +857,687 @@
 {% block extra_js %}
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Kecamatan GeoJSON Data -->
+<script src="{% static 'js/samarinda_kecamatan.js' %}"></script>
 <script>
-    // Map setup
-    const map = L.map('incident-leaflet-map').setView([-6.2088, 106.8456], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, attribution: '© OpenStreetMap'
-    }).addTo(map);
+(function() {
+    'use strict';
 
-    // Dynamic Pins
-    const pinsData = {{ pins_json|safe }};
-    const markers = [];
+    // ═══════════════════════════════════
+    // CONFIGURATION
+    // ═══════════════════════════════════
+    const SAMARINDA_CENTER = [-0.4948, 117.1436];
+    const DEFAULT_ZOOM = 13;
 
-    const getPinColor = (status) => {
-        if (status === 'resolved') return '#16a34a';
-        if (status === 'in_progress') return '#2563eb';
-        return '#d97706'; // pending
+    // Category config: icon, color, label
+    const CATEGORY_CONFIG = {
+        'infrastructure': { icon: '🏗️', color: '#f59e0b', label: 'Infrastruktur', markerBg: '#fef3c7' },
+        'environment':    { icon: '🌿', color: '#10b981', label: 'Lingkungan',    markerBg: '#d1fae5' },
+        'public_safety':  { icon: '⚠️', color: '#ef4444', label: 'Keselamatan',   markerBg: '#fee2e2' },
+        'other':          { icon: '📋', color: '#6366f1', label: 'Lainnya',       markerBg: '#e0e7ff' }
     };
 
-    pinsData.forEach(pin => {
-        // Create custom circle marker
-        const marker = L.circleMarker([pin.lat, pin.lng], {
-            radius: 8,
-            fillColor: getPinColor(pin.status),
-            color: '#ffffff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 1
-        }).addTo(map);
+    const STATUS_COLORS = {
+        'resolved':    '#16a34a',
+        'in_progress': '#2563eb',
+        'pending':     '#d97706',
+        'pending_publication': '#8b5cf6'
+    };
 
-        marker.bindPopup(`
-            <div style="font-family:'Inter',sans-serif; min-width:180px;">
-                <div style="font-weight:700; margin-bottom:4px; font-size:14px;">${pin.title}</div>
-                <div style="font-size:12px; color:#666; margin-bottom:6px;">${pin.address || 'Lokasi tidak diketahui'}</div>
-                <div style="font-size:11px; padding:2px 6px; border-radius:4px; background:#f1f5f9; display:inline-block;">
-                    Status: <strong>${pin.status_display}</strong>
-                </div>
-            </div>
-        `);
-        
-        markers.push(marker);
-    });
+    // ═══════════════════════════════════
+    // MAP INIT
+    // ═══════════════════════════════════
+    const map = L.map('incident-leaflet-map', {
+        zoomControl: true,
+        scrollWheelZoom: true
+    }).setView(SAMARINDA_CENTER, DEFAULT_ZOOM);
 
-    // Auto-fit bounds if we have pins
-    if (markers.length > 0) {
-        const group = new L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.1));
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+    }).addTo(map);
+
+    // ═══════════════════════════════════
+    // DATA
+    // ═══════════════════════════════════
+    const pinsData = {{ pins_json|safe }};
+    let allMarkers = [];
+    let kecamatanLayers = [];
+    let activeZone = 'all';
+    let activeCategory = 'all';
+    let activeStatus = 'all';
+    let zoneMaskLayer = null;  // Inverted polygon mask for selected zone
+
+    // ═══════════════════════════════════
+    // KECAMATAN BOUNDARY POLYGONS
+    // ═══════════════════════════════════
+    const zoneSelect = document.getElementById('zone-filter');
+
+    if (typeof SAMARINDA_KECAMATAN !== 'undefined') {
+        SAMARINDA_KECAMATAN.features.forEach(feature => {
+            const props = feature.properties;
+
+            // Add option to zone select
+            const opt = document.createElement('option');
+            opt.value = props.kode;
+            opt.textContent = props.nama;
+            zoneSelect.appendChild(opt);
+
+            // Draw polygon on map
+            const layer = L.geoJSON(feature, {
+                style: {
+                    color: props.warna,
+                    weight: 2,
+                    opacity: 0.6,
+                    fillColor: props.warna,
+                    fillOpacity: 0.06,
+                    dashArray: '6 4'
+                },
+                onEachFeature: function(f, l) {
+                    l.bindTooltip(props.nama, {
+                        permanent: false,
+                        direction: 'center',
+                        className: 'zone-tooltip'
+                    });
+                    l.on('click', function() {
+                        zoneSelect.value = props.kode;
+                        zoneSelect.dispatchEvent(new Event('change'));
+                    });
+                }
+            }).addTo(map);
+
+            kecamatanLayers.push({
+                kode: props.kode,
+                nama: props.nama,
+                warna: props.warna,
+                layer: layer,
+                bounds: layer.getBounds(),
+                feature: feature  // simpan feature asli untuk mask
+            });
+        });
     }
 
-    // Filter Chips UI
-    document.querySelectorAll('.filter-chip').forEach(chip => {
+    // ═══════════════════════════════════
+    // CREATE CUSTOM MARKER
+    // ═══════════════════════════════════
+    function createCategoryIcon(pin) {
+        const cat = CATEGORY_CONFIG[pin.category_raw] || CATEGORY_CONFIG['other'];
+        const statusColor = STATUS_COLORS[pin.status] || STATUS_COLORS['pending'];
+
+        const html = `
+            <div style="
+                width: 34px; height: 34px;
+                background: ${cat.markerBg};
+                border: 2.5px solid ${statusColor};
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+                transition: transform 0.15s;
+                cursor: pointer;
+                position: relative;
+            ">${cat.icon}
+                <div style="
+                    position: absolute;
+                    bottom: -4px; right: -4px;
+                    width: 10px; height: 10px;
+                    background: ${statusColor};
+                    border-radius: 50%;
+                    border: 2px solid white;
+                "></div>
+            </div>
+        `;
+
+        return L.divIcon({
+            html: html,
+            className: 'custom-category-marker',
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+            popupAnchor: [0, -20]
+        });
+    }
+
+    // ═══════════════════════════════════
+    // CREATE POPUP CONTENT
+    // ═══════════════════════════════════
+    function createPopupContent(pin) {
+        const cat = CATEGORY_CONFIG[pin.category_raw] || CATEGORY_CONFIG['other'];
+        const statusColor = STATUS_COLORS[pin.status] || STATUS_COLORS['pending'];
+        const statusClass = `status-${pin.status}`;
+
+        let descHtml = '';
+        if (pin.description) {
+            descHtml = `<div class="popup-desc">${pin.description}</div>`;
+        }
+
+        return `
+            <div class="popup-inner">
+                <div class="popup-header">
+                    <div class="popup-cat-icon cat-${pin.category_raw}">${cat.icon}</div>
+                    <div class="popup-title">${pin.title}</div>
+                </div>
+                <div class="popup-address">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    ${pin.address || 'Lokasi tidak diketahui'}
+                </div>
+                ${descHtml}
+                <div class="popup-meta">
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <span class="popup-badge ${statusClass}">${pin.status_display}</span>
+                        <span style="font-size:0.68rem; color:#9ca3af; padding:2px 6px; background:#f1f5f9; border-radius:4px;">${cat.label}</span>
+                    </div>
+                    <span class="popup-time">${pin.time}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // ═══════════════════════════════════
+    // RENDER MARKERS
+    // ═══════════════════════════════════
+    function renderMarkers() {
+        // Remove existing markers
+        allMarkers.forEach(m => map.removeLayer(m.marker));
+        allMarkers = [];
+
+        pinsData.forEach(pin => {
+            const icon = createCategoryIcon(pin);
+            const marker = L.marker([pin.lat, pin.lng], { icon: icon }).addTo(map);
+            marker.bindPopup(createPopupContent(pin), {
+                className: 'custom-popup',
+                maxWidth: 300,
+                closeButton: true
+            });
+
+            allMarkers.push({
+                marker: marker,
+                data: pin
+            });
+        });
+
+        updateCounts();
+    }
+
+    // ═══════════════════════════════════
+    // POINT-IN-POLYGON CHECK
+    // ═══════════════════════════════════
+    function isPointInZone(lat, lng, zoneKode) {
+        if (zoneKode === 'all') return true;
+        const zone = kecamatanLayers.find(z => z.kode === zoneKode);
+        if (!zone) return true;
+
+        // Use Leaflet's contains check on the GeoJSON layer bounds first
+        const point = L.latLng(lat, lng);
+        if (!zone.bounds.contains(point)) return false;
+
+        // Detailed ray-casting check against the polygon
+        let inside = false;
+        zone.layer.eachLayer(function(polygonLayer) {
+            if (inside) return;
+            const latlngs = polygonLayer.getLatLngs()[0];
+            let j = latlngs.length - 1;
+            for (let i = 0; i < latlngs.length; i++) {
+                const xi = latlngs[i].lng, yi = latlngs[i].lat;
+                const xj = latlngs[j].lng, yj = latlngs[j].lat;
+                const intersect = ((yi > lat) !== (yj > lat)) &&
+                    (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+                j = i;
+            }
+        });
+        return inside;
+    }
+
+    // ═══════════════════════════════════
+    // FILTER & VISIBILITY
+    // ═══════════════════════════════════
+    function applyFilters() {
+        let visibleCount = 0;
+
+        allMarkers.forEach(item => {
+            const pin = item.data;
+            const marker = item.marker;
+
+            // Zone filter
+            let zoneMatch = (activeZone === 'all') || isPointInZone(pin.lat, pin.lng, activeZone);
+
+            // Category filter
+            let catMatch = (activeCategory === 'all') || (pin.category_raw === activeCategory);
+
+            // Status filter
+            let statusMatch = (activeStatus === 'all') || (pin.status === activeStatus);
+
+            const visible = zoneMatch && catMatch && statusMatch;
+
+            if (visible) {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+                visibleCount++;
+            } else {
+                if (map.hasLayer(marker)) map.removeLayer(marker);
+            }
+        });
+
+        // Update visible count
+        document.getElementById('visible-count').textContent = visibleCount;
+
+        // Update sidebar list visibility
+        const listItems = document.querySelectorAll('.incident-item');
+        let listVisibleCount = 0;
+        listItems.forEach(item => {
+            const cat = item.dataset.category;
+            const status = item.dataset.status;
+            const lat = parseFloat(item.dataset.lat);
+            const lng = parseFloat(item.dataset.lng);
+
+            let zoneMatch = (activeZone === 'all') || isPointInZone(lat, lng, activeZone);
+            let catMatch = (activeCategory === 'all') || (cat === activeCategory);
+            let statusMatch = (activeStatus === 'all') || (status === activeStatus);
+
+            if (zoneMatch && catMatch && statusMatch) {
+                item.style.display = '';
+                listVisibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        document.getElementById('list-count-label').textContent = `Menampilkan ${listVisibleCount} laporan`;
+
+        updateCounts();
+    }
+
+    // ═══════════════════════════════════
+    // UPDATE COUNTS
+    // ═══════════════════════════════════
+    function updateCounts() {
+        const counts = { all: 0, infrastructure: 0, environment: 0, public_safety: 0, other: 0 };
+
+        pinsData.forEach(pin => {
+            let zoneMatch = (activeZone === 'all') || isPointInZone(pin.lat, pin.lng, activeZone);
+            let statusMatch = (activeStatus === 'all') || (pin.status === activeStatus);
+
+            if (zoneMatch && statusMatch) {
+                counts.all++;
+                const raw = pin.category_raw || 'other';
+                if (counts[raw] !== undefined) counts[raw]++;
+            }
+        });
+
+        Object.keys(counts).forEach(key => {
+            const el = document.getElementById('count-' + key);
+            if (el) el.textContent = counts[key];
+        });
+    }
+
+    // ═══════════════════════════════════
+    // ZONE FILTER HANDLER
+    // ═══════════════════════════════════
+    // ═══════════════════════════════════
+    // ZONE MASK — Inverted polygon overlay
+    // ═══════════════════════════════════
+    function applyZoneMask(zone) {
+        // Hapus mask lama
+        if (zoneMaskLayer) {
+            map.removeLayer(zoneMaskLayer);
+            zoneMaskLayer = null;
+        }
+        if (!zone) return;
+
+        // Ambil koordinat polygon dari GeoJSON feature
+        const geom = zone.feature.geometry;
+        // Buat "world polygon" besar (kotak menutupi seluruh dunia)
+        const worldCoords = [[
+            [-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]
+        ]];
+
+        // Kumpulkan semua ring dari polygon / multipolygon zona
+        let holeRings = [];
+        if (geom.type === 'Polygon') {
+            // exterior ring saja (index 0) sebagai lubang
+            holeRings.push(geom.coordinates[0]);
+        } else if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach(poly => holeRings.push(poly[0]));
+        }
+
+        // Bangun GeoJSON Feature dengan world sebagai outer ring dan zona sebagai hole
+        const maskGeoJSON = {
+            type: 'Feature',
+            geometry: {
+                type: 'Polygon',
+                coordinates: [
+                    worldCoords[0],
+                    ...holeRings
+                ]
+            }
+        };
+
+        zoneMaskLayer = L.geoJSON(maskGeoJSON, {
+            style: {
+                color: 'transparent',
+                weight: 0,
+                fillColor: '#000000',
+                fillOpacity: 0.28,
+                interactive: false
+            }
+        }).addTo(map);
+    }
+
+    zoneSelect.addEventListener('change', function() {
+        activeZone = this.value;
+
+        const banner = document.getElementById('zone-info-banner');
+
+        // Highlight selected zone boundary
+        kecamatanLayers.forEach(z => {
+            z.layer.setStyle({
+                weight: z.kode === activeZone ? 3.5 : 2,
+                opacity: z.kode === activeZone ? 1 : 0.6,
+                fillOpacity: z.kode === activeZone ? 0 : 0.06,
+                dashArray: z.kode === activeZone ? null : '6 4'
+            });
+        });
+
+        if (activeZone !== 'all') {
+            const zone = kecamatanLayers.find(z => z.kode === activeZone);
+            if (zone) {
+                // Fit ke bounds polygon asli dengan padding
+                map.fitBounds(zone.layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+
+                // Terapkan inverted mask agar zona tampak mengikuti bentuk asli
+                applyZoneMask(zone);
+
+                // Show zone info banner
+                document.getElementById('zone-name-display').textContent = zone.nama;
+                document.getElementById('zone-color-tag').style.background = zone.warna;
+
+                // Count markers in this zone
+                let zoneCount = 0;
+                pinsData.forEach(pin => {
+                    if (isPointInZone(pin.lat, pin.lng, activeZone)) zoneCount++;
+                });
+                document.getElementById('zone-count-display').textContent = `${zoneCount} laporan`;
+                banner.classList.add('visible');
+            }
+        } else {
+            // Hapus mask saat reset ke semua kecamatan
+            applyZoneMask(null);
+            map.setView(SAMARINDA_CENTER, DEFAULT_ZOOM);
+            banner.classList.remove('visible');
+        }
+
+        applyFilters();
+    });
+
+    // Close zone banner button
+    document.getElementById('close-zone-btn').addEventListener('click', function() {
+        zoneSelect.value = 'all';
+        zoneSelect.dispatchEvent(new Event('change'));
+    });
+
+    // ═══════════════════════════════════
+    // CATEGORY FILTER HANDLER
+    // ═══════════════════════════════════
+    document.querySelectorAll('#category-filters .filter-chip').forEach(chip => {
         chip.addEventListener('click', function() {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#category-filters .filter-chip').forEach(c => c.classList.remove('active'));
             this.classList.add('active');
-            // Advanced filtering logic can be added here
+            activeCategory = this.dataset.category;
+            applyFilters();
         });
     });
 
+    // ═══════════════════════════════════
+    // STATUS FILTER HANDLER
+    // ═══════════════════════════════════
+    document.querySelectorAll('#status-filters .filter-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('#status-filters .filter-chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            activeStatus = this.dataset.status;
+            applyFilters();
+        });
+    });
+
+    // ═══════════════════════════════════
+    // SIDEBAR CLICK → FLY TO MARKER
+    // ═══════════════════════════════════
+    document.querySelectorAll('.incident-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const lat = parseFloat(this.dataset.lat);
+            const lng = parseFloat(this.dataset.lng);
+            const id = parseInt(this.dataset.id);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.flyTo([lat, lng], 16, { duration: 0.8 });
+
+                // Open popup of matching marker
+                allMarkers.forEach(m => {
+                    if (m.data.id === id) {
+                        m.marker.openPopup();
+                    }
+                });
+
+                // Highlight this item
+                document.querySelectorAll('.incident-item').forEach(i => i.classList.remove('highlighted'));
+                this.classList.add('highlighted');
+            }
+        });
+    });
+
+    // ═══════════════════════════════════
+    // GEOLOCATION — LOKASI USER REALTIME
+    // ═══════════════════════════════════
+    let userLocationMarker = null;
+    let userAccuracyCircle = null;
+    let watchId = null;
+    let isTracking = false;
+
+    const locateBtn = document.getElementById('locate-btn');
+    const locationToast = document.getElementById('location-toast');
+    const toastIcon = document.getElementById('toast-icon');
+    const toastText = document.getElementById('toast-text');
+
+    function showToast(message, type, duration) {
+        toastText.textContent = message;
+        toastIcon.className = 'toast-icon ' + type;
+        if (type === 'success') toastIcon.textContent = '✅';
+        else if (type === 'error') toastIcon.textContent = '❌';
+        else toastIcon.textContent = '📍';
+        locationToast.classList.add('visible');
+        if (duration) {
+            setTimeout(() => locationToast.classList.remove('visible'), duration);
+        }
+    }
+
+    function hideToast() {
+        locationToast.classList.remove('visible');
+    }
+
+    function createUserMarker(lat, lng) {
+        const markerHtml = `
+            <div class="user-location-marker">
+                <div class="user-loc-pulse"></div>
+                <div class="user-loc-dot"></div>
+            </div>
+        `;
+        const icon = L.divIcon({
+            html: markerHtml,
+            className: '',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        if (userLocationMarker) {
+            userLocationMarker.setLatLng([lat, lng]);
+        } else {
+            userLocationMarker = L.marker([lat, lng], {
+                icon: icon,
+                zIndexOffset: 1000
+            }).addTo(map);
+
+            userLocationMarker.bindPopup(`
+                <div style="font-family:'Inter',sans-serif; padding:10px; text-align:center; min-width:140px;">
+                    <div style="font-size:1.4rem; margin-bottom:4px;">📍</div>
+                    <div style="font-weight:700; font-size:0.85rem; color:#111827; margin-bottom:2px;">Lokasi Anda</div>
+                    <div style="font-size:0.72rem; color:#6b7280;">Posisi saat ini</div>
+                </div>
+            `, { className: 'custom-popup' });
+        }
+    }
+
+    function updateAccuracyCircle(lat, lng, accuracy) {
+        if (userAccuracyCircle) {
+            userAccuracyCircle.setLatLng([lat, lng]);
+            userAccuracyCircle.setRadius(accuracy);
+        } else {
+            userAccuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                color: 'rgba(59,130,246,0.3)',
+                fillColor: 'rgba(59,130,246,0.08)',
+                fillOpacity: 1,
+                weight: 1
+            }).addTo(map);
+        }
+    }
+
+    function onLocationFound(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        createUserMarker(lat, lng);
+        updateAccuracyCircle(lat, lng, accuracy);
+
+        // First time: fly to location
+        if (!locateBtn.classList.contains('active')) {
+            map.flyTo([lat, lng], 15, { duration: 1.2 });
+            locateBtn.classList.add('active');
+            locateBtn.classList.remove('loading');
+            showToast(`Lokasi ditemukan (akurasi ${Math.round(accuracy)}m)`, 'success', 3000);
+        }
+    }
+
+    function onLocationError(error) {
+        locateBtn.classList.remove('loading', 'active');
+        isTracking = false;
+
+        let msg = 'Gagal mendapatkan lokasi.';
+        if (error.code === 1) msg = 'Izin lokasi ditolak. Aktifkan GPS/izin browser.';
+        else if (error.code === 2) msg = 'Lokasi tidak tersedia.';
+        else if (error.code === 3) msg = 'Waktu pencarian habis.';
+
+        showToast(msg, 'error', 4000);
+    }
+
+    function startTracking() {
+        if (!navigator.geolocation) {
+            showToast('Browser tidak mendukung geolokasi.', 'error', 3000);
+            return;
+        }
+
+        locateBtn.classList.add('loading');
+        showToast('Mencari lokasi Anda...', 'loading');
+
+        // Get current position first
+        navigator.geolocation.getCurrentPosition(onLocationFound, onLocationError, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
+
+        // Then watch for updates
+        watchId = navigator.geolocation.watchPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                createUserMarker(lat, lng);
+                updateAccuracyCircle(lat, lng, accuracy);
+            },
+            function() {},
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
+
+        isTracking = true;
+    }
+
+    function stopTracking() {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        if (userLocationMarker) {
+            map.removeLayer(userLocationMarker);
+            userLocationMarker = null;
+        }
+        if (userAccuracyCircle) {
+            map.removeLayer(userAccuracyCircle);
+            userAccuracyCircle = null;
+        }
+        locateBtn.classList.remove('active', 'loading');
+        isTracking = false;
+        hideToast();
+    }
+
+    locateBtn.addEventListener('click', function() {
+        if (isTracking) {
+            stopTracking();
+        } else {
+            startTracking();
+        }
+    });
+    // ═══════════════════════════════════
+    // COLLAPSIBLE LEGEND
+    // ═══════════════════════════════════
+    const mapLegend = document.getElementById('map-legend');
+    const legendHeader = document.getElementById('legend-header');
+    if (mapLegend && legendHeader) {
+        if (localStorage.getItem('map-legend-collapsed') === 'true') {
+            mapLegend.classList.add('collapsed');
+        }
+        legendHeader.addEventListener('click', function() {
+            mapLegend.classList.toggle('collapsed');
+            localStorage.setItem('map-legend-collapsed', mapLegend.classList.contains('collapsed'));
+        });
+    }
+
+    // ═══════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════
+    renderMarkers();
+
+    // Auto-fit bounds if we have pins
+    if (allMarkers.length > 0) {
+        const group = new L.featureGroup(allMarkers.map(m => m.marker));
+        map.fitBounds(group.getBounds().pad(0.15));
+    }
+
     setTimeout(() => map.invalidateSize(), 200);
+
+})();
 </script>
+
+<!-- Extra style for custom marker reset -->
+<style>
+    .custom-category-marker {
+        background: transparent !important;
+        border: none !important;
+    }
+    .zone-tooltip {
+        background: rgba(255,255,255,0.95) !important;
+        border: 1px solid rgba(26,60,26,0.1) !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        color: #1a3c1a !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+    .zone-tooltip::before {
+        border-top-color: rgba(255,255,255,0.95) !important;
+    }
+</style>
 {% endblock %}
