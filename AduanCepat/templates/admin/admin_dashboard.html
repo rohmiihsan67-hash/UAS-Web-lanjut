@@ -14,6 +14,8 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Kecamatan GeoJSON Data -->
+    <script src="{% static 'js/samarinda_kecamatan.js' %}"></script>
     <style>
         *,
         *::before,
@@ -2507,226 +2509,580 @@
                 return;
             }
 
+            const SAMARINDA_CENTER = [-0.4948, 117.1436];
+            const DEFAULT_ZOOM = 13;
+
+            const CATEGORY_CONFIG = {
+                'infrastructure': { icon: '🏗️', color: '#f59e0b', label: 'Infrastruktur', markerBg: '#fef3c7' },
+                'environment':    { icon: '🌿', color: '#10b981', label: 'Lingkungan',    markerBg: '#d1fae5' },
+                'public_safety':  { icon: '⚠️', color: '#ef4444', label: 'Keselamatan',   markerBg: '#fee2e2' },
+                'other':          { icon: '📋', color: '#6366f1', label: 'Lainnya',       markerBg: '#e0e7ff' }
+            };
+
+            const STATUS_COLORS = {
+                'resolved':    '#16a34a',
+                'in_progress': '#2563eb',
+                'pending':     '#d97706',
+                'pending_publication': '#8b5cf6'
+            };
+
             const mapEl = document.getElementById('incident-leaflet-map');
             if (!mapEl) return;
 
-            // Center map to Jakarta initially
-            leafletMap = L.map('incident-leaflet-map').setView([-6.1754, 106.8272], 12);
+            leafletMap = L.map('incident-leaflet-map', {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView(SAMARINDA_CENTER, DEFAULT_ZOOM);
 
-            // Google Maps Roadmap tile layer
-            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                maxZoom: 20,
-                attribution: '&copy; Google Maps'
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
             }).addTo(leafletMap);
 
             markersGroup = L.layerGroup().addTo(leafletMap);
             mapInitialized = true;
 
-            renderIncidentList('all');
-            renderMarkers('all');
+            const pinsData = {{ pins_json|safe }};
+            let allMarkers = [];
+            let kecamatanLayers = [];
+            let activeZone = 'all';
+            let activeCategory = 'all';
+            let activeStatus = 'all';
+            let zoneMaskLayer = null;
 
-            // Try to get user's current location
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
+            const zoneSelect = document.getElementById('zone-filter');
 
-                    // Set map view to user's location with closer zoom
-                    leafletMap.setView([lat, lng], 14);
+            if (typeof SAMARINDA_KECAMATAN !== 'undefined') {
+                zoneSelect.innerHTML = '<option value="all">🗺️ Semua Kecamatan</option>';
 
-                    // Add marker for user's current location
-                    L.marker([lat, lng], {
-                        icon: L.divIcon({
-                            className: 'user-location-marker-container',
-                            html: '<div style="background-color: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);"></div>',
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
-                        })
-                    }).addTo(leafletMap).bindPopup('<b style="font-family:\'Inter\', sans-serif;">Lokasi Anda Sekarang</b>').openPopup();
-                }, error => {
-                    console.warn("Geolocation access denied or error:", error);
-                }, {
+                SAMARINDA_KECAMATAN.features.forEach(feature => {
+                    const props = feature.properties;
+                    const opt = document.createElement('option');
+                    opt.value = props.kode;
+                    opt.textContent = props.nama;
+                    zoneSelect.appendChild(opt);
+
+                    const layer = L.geoJSON(feature, {
+                        style: {
+                            color: props.warna,
+                            weight: 2,
+                            opacity: 0.6,
+                            fillColor: props.warna,
+                            fillOpacity: 0.06,
+                            dashArray: '6 4'
+                        },
+                        onEachFeature: function(f, l) {
+                            l.bindTooltip(props.nama, {
+                                permanent: false,
+                                direction: 'center',
+                                className: 'zone-tooltip'
+                            });
+                            l.on('click', function() {
+                                zoneSelect.value = props.kode;
+                                zoneSelect.dispatchEvent(new Event('change'));
+                            });
+                        }
+                    }).addTo(leafletMap);
+
+                    kecamatanLayers.push({
+                        kode: props.kode,
+                        nama: props.nama,
+                        warna: props.warna,
+                        layer: layer,
+                        bounds: layer.getBounds(),
+                        feature: feature
+                    });
+                });
+            }
+
+            function createCategoryIcon(pin) {
+                const cat = CATEGORY_CONFIG[pin.category_raw] || CATEGORY_CONFIG['other'];
+                const statusColor = STATUS_COLORS[pin.status] || STATUS_COLORS['pending'];
+
+                const html = `
+                    <div style="
+                        width: 34px; height: 34px;
+                        background: ${cat.markerBg};
+                        border: 2.5px solid ${statusColor};
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                        box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+                        transition: transform 0.15s;
+                        cursor: pointer;
+                        position: relative;
+                    ">${cat.icon}
+                        <div style="
+                            position: absolute;
+                            bottom: -4px; right: -4px;
+                            width: 10px; height: 10px;
+                            background: ${statusColor};
+                            border-radius: 50%;
+                            border: 2px solid white;
+                        "></div>
+                    </div>
+                `;
+
+                return L.divIcon({
+                    html: html,
+                    className: 'custom-category-marker',
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 17],
+                    popupAnchor: [0, -20]
+                });
+            }
+
+            function createPopupContent(pin) {
+                const cat = CATEGORY_CONFIG[pin.category_raw] || CATEGORY_CONFIG['other'];
+                const statusClass = `status-${pin.status}`;
+
+                let descHtml = '';
+                if (pin.description) {
+                    descHtml = `<div class="popup-desc">${pin.description}</div>`;
+                }
+
+                return `
+                    <div class="popup-inner">
+                        <div class="popup-header">
+                            <div class="popup-cat-icon cat-${pin.category_raw}">${cat.icon}</div>
+                            <div class="popup-title">${pin.title}</div>
+                        </div>
+                        <div class="popup-address">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            ${pin.address || 'Lokasi tidak diketahui'}
+                        </div>
+                        ${descHtml}
+                        <div class="popup-meta">
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <span class="popup-badge ${statusClass}">${pin.status_display}</span>
+                                <span style="font-size:0.68rem; color:#9ca3af; padding:2px 6px; background:#f1f5f9; border-radius:4px;">${cat.label}</span>
+                            </div>
+                            <span class="popup-time">${pin.time}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderMarkersList() {
+                allMarkers.forEach(m => leafletMap.removeLayer(m.marker));
+                allMarkers = [];
+
+                pinsData.forEach(pin => {
+                    const icon = createCategoryIcon(pin);
+                    const marker = L.marker([pin.lat, pin.lng], { icon: icon }).addTo(leafletMap);
+                    marker.bindPopup(createPopupContent(pin), {
+                        className: 'custom-popup',
+                        maxWidth: 300,
+                        closeButton: true
+                    });
+
+                    allMarkers.push({
+                        marker: marker,
+                        data: pin
+                    });
+                });
+
+                updateCounts();
+            }
+
+            function isPointInZone(lat, lng, zoneKode) {
+                if (zoneKode === 'all') return true;
+                const zone = kecamatanLayers.find(z => z.kode === zoneKode);
+                if (!zone) return true;
+
+                const point = L.latLng(lat, lng);
+                if (!zone.bounds.contains(point)) return false;
+
+                let inside = false;
+                zone.layer.eachLayer(function(polygonLayer) {
+                    if (inside) return;
+                    const latlngs = polygonLayer.getLatLngs()[0];
+                    let j = latlngs.length - 1;
+                    for (let i = 0; i < latlngs.length; i++) {
+                        const xi = latlngs[i].lng, yi = latlngs[i].lat;
+                        const xj = latlngs[j].lng, yj = latlngs[j].lat;
+                        const intersect = ((yi > lat) !== (yj > lat)) &&
+                            (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                        if (intersect) inside = !inside;
+                        j = i;
+                    }
+                });
+                return inside;
+            }
+
+            function applyFilters() {
+                let visibleCount = 0;
+
+                allMarkers.forEach(item => {
+                    const pin = item.data;
+                    const marker = item.marker;
+
+                    let zoneMatch = (activeZone === 'all') || isPointInZone(pin.lat, pin.lng, activeZone);
+                    let catMatch = (activeCategory === 'all') || (pin.category_raw === activeCategory);
+                    let statusMatch = (activeStatus === 'all') || (pin.status === activeStatus);
+
+                    const visible = zoneMatch && catMatch && statusMatch;
+
+                    if (visible) {
+                        if (!leafletMap.hasLayer(marker)) marker.addTo(leafletMap);
+                        visibleCount++;
+                    } else {
+                        if (leafletMap.hasLayer(marker)) leafletMap.removeLayer(marker);
+                    }
+                });
+
+                document.getElementById('visible-count').textContent = visibleCount;
+
+                const listItems = document.querySelectorAll('.incident-item');
+                let listVisibleCount = 0;
+                listItems.forEach(item => {
+                    const cat = item.dataset.category;
+                    const status = item.dataset.status;
+                    const lat = parseFloat(item.dataset.lat);
+                    const lng = parseFloat(item.dataset.lng);
+
+                    let zoneMatch = (activeZone === 'all') || isPointInZone(lat, lng, activeZone);
+                    let catMatch = (activeCategory === 'all') || (cat === activeCategory);
+                    let statusMatch = (activeStatus === 'all') || (status === activeStatus);
+
+                    if (zoneMatch && catMatch && statusMatch) {
+                        item.style.display = '';
+                        listVisibleCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                document.getElementById('list-count-label').textContent = `Menampilkan ${listVisibleCount} laporan`;
+
+                updateCounts();
+            }
+
+            function updateCounts() {
+                const counts = { all: 0, infrastructure: 0, environment: 0, public_safety: 0, other: 0 };
+
+                pinsData.forEach(pin => {
+                    let zoneMatch = (activeZone === 'all') || isPointInZone(pin.lat, pin.lng, activeZone);
+                    let statusMatch = (activeStatus === 'all') || (pin.status === activeStatus);
+
+                    if (zoneMatch && statusMatch) {
+                        counts.all++;
+                        const raw = pin.category_raw || 'other';
+                        if (counts[raw] !== undefined) counts[raw]++;
+                    }
+                });
+
+                Object.keys(counts).forEach(key => {
+                    const el = document.getElementById('count-' + key);
+                    if (el) el.textContent = counts[key];
+                });
+            }
+
+            function applyZoneMask(zone) {
+                if (zoneMaskLayer) {
+                    leafletMap.removeLayer(zoneMaskLayer);
+                    zoneMaskLayer = null;
+                }
+                if (!zone) return;
+
+                const geom = zone.feature.geometry;
+                const worldCoords = [[
+                    [-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]
+                ]];
+
+                let holeRings = [];
+                if (geom.type === 'Polygon') {
+                    holeRings.push(geom.coordinates[0]);
+                } else if (geom.type === 'MultiPolygon') {
+                    geom.coordinates.forEach(poly => holeRings.push(poly[0]));
+                }
+
+                const maskGeoJSON = {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [
+                            worldCoords[0],
+                            ...holeRings
+                        ]
+                    }
+                };
+
+                zoneMaskLayer = L.geoJSON(maskGeoJSON, {
+                    style: {
+                        color: 'transparent',
+                        weight: 0,
+                        fillColor: '#000000',
+                        fillOpacity: 0.28,
+                        interactive: false
+                    }
+                }).addTo(leafletMap);
+            }
+
+            zoneSelect.addEventListener('change', function() {
+                activeZone = this.value;
+                const banner = document.getElementById('zone-info-banner');
+
+                kecamatanLayers.forEach(z => {
+                    z.layer.setStyle({
+                        weight: z.kode === activeZone ? 3.5 : 2,
+                        opacity: z.kode === activeZone ? 1 : 0.6,
+                        fillOpacity: z.kode === activeZone ? 0 : 0.06,
+                        dashArray: z.kode === activeZone ? null : '6 4'
+                    });
+                });
+
+                if (activeZone !== 'all') {
+                    const zone = kecamatanLayers.find(z => z.kode === activeZone);
+                    if (zone) {
+                        leafletMap.fitBounds(zone.layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+                        applyZoneMask(zone);
+
+                        document.getElementById('zone-name-display').textContent = zone.nama;
+                        document.getElementById('zone-color-tag').style.background = zone.warna;
+
+                        let zoneCount = 0;
+                        pinsData.forEach(pin => {
+                            if (isPointInZone(pin.lat, pin.lng, activeZone)) zoneCount++;
+                        });
+                        document.getElementById('zone-count-display').textContent = `${zoneCount} laporan`;
+                        banner.classList.add('visible');
+                    }
+                } else {
+                    applyZoneMask(null);
+                    leafletMap.setView(SAMARINDA_CENTER, DEFAULT_ZOOM);
+                    banner.classList.remove('visible');
+                }
+
+                applyFilters();
+            });
+
+            document.getElementById('close-zone-btn').addEventListener('click', function() {
+                zoneSelect.value = 'all';
+                zoneSelect.dispatchEvent(new Event('change'));
+            });
+
+            document.querySelectorAll('#category-filters .filter-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    document.querySelectorAll('#category-filters .filter-chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    activeCategory = this.dataset.category;
+                    applyFilters();
+                });
+            });
+
+            document.querySelectorAll('#status-filters .filter-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    document.querySelectorAll('#status-filters .filter-chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    activeStatus = this.dataset.status;
+                    applyFilters();
+                });
+            });
+
+            document.querySelectorAll('.incident-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    const id = parseInt(this.dataset.id);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        leafletMap.flyTo([lat, lng], 16, { duration: 0.8 });
+
+                        allMarkers.forEach(m => {
+                            if (m.data.id === id) {
+                                m.marker.openPopup();
+                            }
+                        });
+
+                        document.querySelectorAll('.incident-item').forEach(i => i.classList.remove('highlighted'));
+                        this.classList.add('highlighted');
+                    }
+                });
+            });
+
+            let userLocationMarker = null;
+            let userAccuracyCircle = null;
+            let watchId = null;
+            let isTracking = false;
+
+            const locateBtn = document.getElementById('locate-btn');
+            const locationToast = document.getElementById('location-toast');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastText = document.getElementById('toast-text');
+
+            function showToast(message, type, duration) {
+                toastText.textContent = message;
+                toastIcon.className = 'toast-icon ' + type;
+                if (type === 'success') toastIcon.textContent = '✅';
+                else if (type === 'error') toastIcon.textContent = '❌';
+                else toastIcon.textContent = '📍';
+                locationToast.classList.add('visible');
+                if (duration) {
+                    setTimeout(() => locationToast.classList.remove('visible'), duration);
+                }
+            }
+
+            function hideToast() {
+                locationToast.classList.remove('visible');
+            }
+
+            function createUserMarker(lat, lng) {
+                const markerHtml = `
+                    <div class="user-location-marker">
+                        <div class="user-loc-pulse"></div>
+                        <div class="user-loc-dot"></div>
+                    </div>
+                `;
+                const icon = L.divIcon({
+                    html: markerHtml,
+                    className: '',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+
+                if (userLocationMarker) {
+                    userLocationMarker.setLatLng([lat, lng]);
+                } else {
+                    userLocationMarker = L.marker([lat, lng], {
+                        icon: icon,
+                        zIndexOffset: 1000
+                    }).addTo(leafletMap);
+
+                    userLocationMarker.bindPopup(`
+                        <div style="font-family:'Inter',sans-serif; padding:10px; text-align:center; min-width:140px;">
+                            <div style="font-size:1.4rem; margin-bottom:4px;">📍</div>
+                            <div style="font-weight:700; font-size:0.85rem; color:#111827; margin-bottom:2px;">Lokasi Anda</div>
+                            <div style="font-size:0.72rem; color:#6b7280;">Posisi saat ini</div>
+                        </div>
+                    `, { className: 'custom-popup' });
+                }
+            }
+
+            function updateAccuracyCircle(lat, lng, accuracy) {
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setLatLng([lat, lng]);
+                    userAccuracyCircle.setRadius(accuracy);
+                } else {
+                    userAccuracyCircle = L.circle([lat, lng], {
+                        radius: accuracy,
+                        color: 'rgba(59,130,246,0.3)',
+                        fillColor: 'rgba(59,130,246,0.08)',
+                        fillOpacity: 1,
+                        weight: 1
+                    }).addTo(leafletMap);
+                }
+            }
+
+            function onLocationFound(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                createUserMarker(lat, lng);
+                updateAccuracyCircle(lat, lng, accuracy);
+
+                if (!locateBtn.classList.contains('active')) {
+                    leafletMap.flyTo([lat, lng], 15, { duration: 1.2 });
+                    locateBtn.classList.add('active');
+                    locateBtn.classList.remove('loading');
+                    showToast(`Lokasi ditemukan (akurasi ${Math.round(accuracy)}m)`, 'success', 3000);
+                }
+            }
+
+            function onLocationError(error) {
+                locateBtn.classList.remove('loading', 'active');
+                isTracking = false;
+
+                let msg = 'Gagal mendapatkan lokasi.';
+                if (error.code === 1) msg = 'Izin lokasi ditolak. Aktifkan GPS/izin browser.';
+                else if (error.code === 2) msg = 'Lokasi tidak tersedia.';
+                else if (error.code === 3) msg = 'Waktu pencarian habis.';
+
+                showToast(msg, 'error', 4000);
+            }
+
+            function startTracking() {
+                if (!navigator.geolocation) {
+                    showToast('Browser tidak mendukung geolokasi.', 'error', 3000);
+                    return;
+                }
+
+                locateBtn.classList.add('loading');
+                showToast('Mencari lokasi Anda...', 'loading');
+
+                navigator.geolocation.getCurrentPosition(onLocationFound, onLocationError, {
                     enableHighAccuracy: true,
                     timeout: 10000,
                     maximumAge: 0
                 });
+
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy;
+                        createUserMarker(lat, lng);
+                        updateAccuracyCircle(lat, lng, accuracy);
+                    },
+                    function() {},
+                    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+                );
+
+                isTracking = true;
             }
 
-            // Map click listener to add a report
-            leafletMap.on('click', (e) => {
-                const lat = e.latlng.lat.toFixed(6);
-                const lng = e.latlng.lng.toFixed(6);
+            function stopTracking() {
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                if (userLocationMarker) {
+                    leafletMap.removeLayer(userLocationMarker);
+                    userLocationMarker = null;
+                }
+                if (userAccuracyCircle) {
+                    leafletMap.removeLayer(userAccuracyCircle);
+                    userAccuracyCircle = null;
+                }
+                locateBtn.classList.remove('active', 'loading');
+                isTracking = false;
+                hideToast();
+            }
 
-                // Form html inside Leaflet popup
-                const popupHtml = `
-                        <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 6px 2px;">
-                            <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; font-weight: 700; color: var(--green-dark);">Tambah Laporan Kejadian</h4>
-                            <div style="display:flex; flex-direction:column; gap:8px;">
-                                <input type="text" id="new-incident-title" placeholder="Judul Kejadian (misal: Lampu Mati)" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
-                                <input type="text" id="new-incident-desc" placeholder="Deskripsi Kejadian..." style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
-                                <select id="new-incident-status" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem; outline:none; font-family:'Inter',sans-serif;">
-                                    <option value="pending">Menunggu</option>
-                                    <option value="resolved">Selesai</option>
-                                </select>
-                                <button onclick="saveNewIncident(${lat}, ${lng})" style="width:100%; padding:8px; background:var(--green-dark); color:white; border:none; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;">Simpan Laporan</button>
-                            </div>
-                        </div>
-                    `;
-
-                L.popup()
-                    .setLatLng(e.latlng)
-                    .setContent(popupHtml)
-                    .openOn(leafletMap);
+            locateBtn.addEventListener('click', function() {
+                if (isTracking) {
+                    stopTracking();
+                } else {
+                    startTracking();
+                }
             });
-        }
 
-        window.saveNewIncident = function (lat, lng) {
-            const titleInput = document.getElementById('new-incident-title');
-            const descInput = document.getElementById('new-incident-desc');
-            const statusSelect = document.getElementById('new-incident-status');
-
-            if (!titleInput || !titleInput.value.trim()) {
-                alert('Judul laporan tidak boleh kosong!');
-                return;
-            }
-
-            const title = titleInput.value.trim();
-            const desc = descInput ? descInput.value.trim() : '';
-            const status = statusSelect ? statusSelect.value : 'pending';
-
-            const newIncident = {
-                id: Date.now(),
-                lat: parseFloat(lat),
-                lng: parseFloat(lng),
-                status: status,
-                title: title,
-                loc: `Lokasi: ${lat}, ${lng}`,
-                desc: desc,
-                active: false
-            };
-
-            incidentsData.push(newIncident);
-            try {
-                localStorage.setItem('incidentsData', JSON.stringify(incidentsData));
-            } catch (e) {
-                console.error('Error saving incidentsData to localStorage:', e);
-            }
-
-            // Close popup
-            if (leafletMap) {
-                leafletMap.closePopup();
-            }
-
-            // Refresh list and markers
-            const activeFilter = document.querySelector('.map-filters .filter-btn.active').getAttribute('data-filter') || 'all';
-            renderIncidentList(activeFilter);
-            renderMarkers(activeFilter);
-            updateDashboardOverview();
-        };
-
-        function renderIncidentList(filter = 'all') {
-            const listContainer = document.getElementById('map-incident-list');
-            if (!listContainer) return;
-
-            const filtered = incidentsData.filter(item => filter === 'all' || item.status === filter);
-
-            if (filtered.length === 0) {
-                listContainer.innerHTML = `
-                        <div class="empty-state-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); padding: 48px 16px; text-align: center; border: 2px dashed rgba(26,60,26,0.08); border-radius: 12px; margin-top: 4px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 44px; height: 44px; opacity: 0.5; color: var(--green-dark);">
-                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                                <path d="M12 8v4"/>
-                                <path d="M12 16h.01"/>
-                            </svg>
-                            <p style="font-size: 0.84rem; font-weight: 600; color: var(--text-dark);">Belum Ada Laporan</p>
-                            <p style="font-size: 0.76rem; line-height: 1.4;">Klik di mana saja pada peta untuk menambahkan laporan kejadian baru di lokasi tersebut.</p>
-                        </div>
-                    `;
-                return;
-            }
-
-            let html = '';
-            filtered.forEach(item => {
-                const statusClass = item.status === 'resolved' ? 'status-resolved' : 'status-pending';
-                const activeClass = item.active ? 'active' : '';
-                html += `
-                        <div class="incident-item-card ${activeClass}" data-id="${item.id}" data-lat="${item.lat}" data-lng="${item.lng}">
-                            <div class="item-status ${statusClass}">${item.status}</div>
-                            <h4>${item.title}</h4>
-                            <p class="item-loc">${item.loc}</p>
-                            <p class="item-time">Baru saja ditambahkan</p>
-                        </div>
-                    `;
-            });
-            listContainer.innerHTML = html;
-
-            // Re-bind click event to card items
-            document.querySelectorAll('.incident-item-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const id = parseInt(card.getAttribute('data-id'));
-
-                    incidentsData.forEach(item => item.active = (item.id === id));
-                    renderIncidentList(filter);
-
-                    const lat = parseFloat(card.getAttribute('data-lat'));
-                    const lng = parseFloat(card.getAttribute('data-lng'));
-
-                    if (leafletMap) {
-                        leafletMap.setView([lat, lng], 15);
-                        markersGroup.eachLayer(layer => {
-                            if (layer.getLatLng().lat === lat && layer.getLatLng().lng === lng) {
-                                layer.openPopup();
-                            }
-                        });
-                    }
+            const mapLegend = document.getElementById('map-legend');
+            const legendHeader = document.getElementById('legend-header');
+            if (mapLegend && legendHeader) {
+                if (localStorage.getItem('map-legend-collapsed') === 'true') {
+                    mapLegend.classList.add('collapsed');
+                }
+                legendHeader.addEventListener('click', function() {
+                    mapLegend.classList.toggle('collapsed');
+                    localStorage.setItem('map-legend-collapsed', mapLegend.classList.contains('collapsed'));
                 });
-            });
+            }
+
+            renderMarkersList();
+
+            if (allMarkers.length > 0) {
+                const group = new L.featureGroup(allMarkers.map(m => m.marker));
+                leafletMap.fitBounds(group.getBounds().pad(0.15));
+            } else {
+                leafletMap.setView(SAMARINDA_CENTER, DEFAULT_ZOOM);
+            }
+
+            setTimeout(() => leafletMap.invalidateSize(), 200);
         }
-
-        function renderMarkers(filter) {
-            if (!leafletMap || !markersGroup) return;
-            markersGroup.clearLayers();
-
-            incidentsData.forEach(item => {
-                if (filter !== 'all' && item.status !== filter) return;
-
-                const markerColor = item.status === 'resolved' ? '#166534' : '#d97706';
-
-                const marker = L.circleMarker([item.lat, item.lng], {
-                    radius: 8,
-                    fillColor: markerColor,
-                    color: '#ffffff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                });
-
-                const popupContent = `
-                        <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
-                            <h4 style="margin: 0 0 6px 0; font-size: 0.88rem; font-weight: 700; color: #111827;">${item.title}</h4>
-                            <p style="margin: 0 0 4px 0; font-size: 0.76rem; color: #6b7280;">${item.loc}</p>
-                            <p style="margin: 0 0 8px 0; font-size: 0.78rem; line-height: 1.4; color: #374151;">${item.desc}</p>
-                            <span class="item-status ${item.status === 'resolved' ? 'status-resolved' : 'status-pending'}" style="font-size:0.65rem; padding: 2px 8px; border-radius: 4px; font-weight:700; text-transform:uppercase;">${item.status}</span>
-                        </div>
-                    `;
-                marker.bindPopup(popupContent);
-                markersGroup.addLayer(marker);
-            });
-        }
-
-        // Map Filter triggers
-        document.querySelectorAll('.map-filters .filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.map-filters .filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                const filter = btn.getAttribute('data-filter');
-                renderIncidentList(filter);
-                renderMarkers(filter);
-            });
-        });
 
         // Dashboard sub-tab triggers
         document.querySelectorAll('.topbar-tab-link').forEach(link => {

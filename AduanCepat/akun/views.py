@@ -142,6 +142,27 @@ def admin_dashboard_view(request):
         })
     incidents_json = json.dumps(incidents_list)
 
+    # For matching user incident map
+    map_submissions = Submission.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True).order_by('-created_at')[:100]
+    pins = []
+    for sub in map_submissions:
+        pins.append({
+            'id': sub.id,
+            'title': sub.title,
+            'category': sub.get_category_display(),
+            'category_raw': sub.category,
+            'status': sub.status,
+            'status_display': sub.get_status_display(),
+            'priority': sub.priority,
+            'lat': sub.latitude,
+            'lng': sub.longitude,
+            'address': sub.location_address,
+            'time': sub.created_at.strftime("%d %b %Y %H:%M"),
+            'color': sub.status_color,
+            'description': (sub.description[:80] + '...') if sub.description and len(sub.description) > 80 else (sub.description or ''),
+        })
+    pins_json = json.dumps(pins)
+
     context = {
         'profile': profile,
         'form': form,
@@ -169,6 +190,8 @@ def admin_dashboard_view(request):
         'chart_30_area': chart_30_area,
         'chart_30_nodes': nodes_30,
         'incidents_json': incidents_json,
+        'map_submissions': map_submissions,
+        'pins_json': pins_json,
     }
     return render(request, 'admin/admin_dashboard.html', context)
 
