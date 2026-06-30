@@ -237,6 +237,41 @@ LOGGING = {
     },
 }
 
+# ── Supabase S3 Media Storage Configuration ─────────────────────
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'ap-southeast-1')
+
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "endpoint_url": AWS_S3_ENDPOINT_URL,
+                "region_name": AWS_S3_REGION_NAME,
+                "default_acl": None,
+                "querystring_auth": False,  # Agar link gambar tidak expired (public bucket)
+                "file_overwrite": False,    # Mencegah menimpa file dengan nama sama
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    # Menggunakan format URL public objek Supabase sesuai saran Ahmad Munir
+    PROJECT_REF = "epitjznhoqahlejnmdkw"
+    MEDIA_URL = f"https://{PROJECT_REF}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}/"
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
 
 
 
